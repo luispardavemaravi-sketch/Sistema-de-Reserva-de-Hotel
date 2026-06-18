@@ -1,4 +1,4 @@
-package pe.edu.utp.SistemaDeReservacionHotel.Model;
+package pe.edu.utp.SistemaDeReservacionHotel.model;
 
 import jakarta.persistence.*;
 import lombok.*;

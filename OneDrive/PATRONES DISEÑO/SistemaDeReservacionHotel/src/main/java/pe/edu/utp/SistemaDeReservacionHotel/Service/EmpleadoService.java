@@ -1,20 +1,34 @@
-package pe.edu.utp.SistemaDeReservacionHotel.Service;
+package pe.edu.utp.SistemaDeReservacionHotel.service;
 
-import pe.edu.utp.SistemaDeReservacionHotel.Model.Empleado;
+import pe.edu.utp.SistemaDeReservacionHotel.model.Empleado;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EmpleadoService {
+    Empleado save(Empleado empleado);
 
-    void save(Empleado empleado);
+    Empleado update(Empleado empleado);
+
+    void delete(Long id);
 
     List<Empleado> findAll();
 
-    void delete(Empleado empleado);
+    Optional<Empleado> findById(Long id);
+
+    Optional<Empleado> findByEmail(String email);
+
+    List<Empleado> findByNombre(String nombre);
+
+    List<Empleado> findByApellido(String apellido);
 
     List<Empleado> findByCargo(String cargo);
 
-    List<Empleado> findByEmail(String email);
+    List<Empleado> findByCiudad(String ciudad);
+
+    boolean existsByEmail(String email);
+
+    long count();
 
 
 }
