@@ -1,6 +1,8 @@
 package pe.edu.utp.SistemaDeReservacionHotel.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
 import java.io.Serializable;
@@ -16,16 +18,28 @@ import java.util.List;
 @AllArgsConstructor
 public class Reserva implements Serializable {
     private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idReserva;
 
+    @NotBlank
+    @Column(unique = true, nullable = false, length = 100)
     private String codigoReserva;
+
+    @Column(nullable = false, updatable = false)
     private LocalDateTime fechaReserva;
+
+    @NotBlank(message = "La fecha de entrada planificada es obligatoria")
+    @Column(nullable = false)
     private LocalDate fechaEntradaPlanificada;
+
+    @PositiveOrZero(message = "El monto total no puede ser negativo")
+    @Column(nullable = false )
     private Double montoTotalEstimado;
 
     // Relación N a 1: Muchas reservas pertenecen a un Huésped
+
     @ManyToOne
     @JoinColumn(name = "id_huesped", nullable = false)
     private Huesped huesped;
