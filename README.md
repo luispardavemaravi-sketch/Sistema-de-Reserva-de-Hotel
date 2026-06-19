@@ -98,8 +98,6 @@ La API quedará disponible en `http://localhost:8080`.
 |---|---|
 | Luisangel | Desarrollador Backend / Diagramas |
 | — | — |
-| — | — |
-| — | — |
  
 ---
  
