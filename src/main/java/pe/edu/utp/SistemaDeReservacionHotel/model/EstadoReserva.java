@@ -1,6 +1,8 @@
 package pe.edu.utp.SistemaDeReservacionHotel.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +23,11 @@ public class EstadoReserva implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idEstado;
 
+    @NotBlank(message = "El nombre del estado es obligatorio")
+    @Column(unique = true, nullable = false, length = 50)
     private String nombreEstado;
+
+    @NotNull(message = "Debe indicar si el estado es modificable")
+    @Column(nullable = false)
     private Boolean esModificable;
 }
