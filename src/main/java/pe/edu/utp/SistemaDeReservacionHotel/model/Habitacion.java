@@ -1,6 +1,9 @@
 package pe.edu.utp.SistemaDeReservacionHotel.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
 
 import java.io.Serializable;
@@ -18,10 +21,21 @@ public class Habitacion implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idHabitacion;
 
+    @NotBlank(message = "El número de habitación es obligatorio")
+    @Column(length = 100, nullable = false, unique = true)
     private String numeroHabitacion;
+
+    @Column(length = 255)
     private String descripcion;
+
+    @NotNull(message = "El precio actual es obligatorio")
+    @PositiveOrZero(message = "El precio actual debe ser un valor positivo o cero")
+    @Column(length = 255, nullable = false)
     private Double precioActual;
+
+    @Column(length = 255, nullable = false)
     private boolean estadoActivo;
+
     @ManyToOne
     @JoinColumn(name = "id_piso")
     private Piso piso;
