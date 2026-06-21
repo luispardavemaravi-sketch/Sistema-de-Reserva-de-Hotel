@@ -1,6 +1,7 @@
 package pe.edu.utp.SistemaDeReservacionHotel.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 import java.io.Serializable;
@@ -17,6 +18,11 @@ public class AreaHotel implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idAreaHotel;
 
+    @NotBlank(message = "El nombre del área es obligatorio")
+    @Column(nullable = false, length = 40)
     private String nombreArea;
+
+    @NotBlank(message = "La ubicación del área es obligatoria")
+    @Column(length = 40)
     private String ubicacion;
 }
