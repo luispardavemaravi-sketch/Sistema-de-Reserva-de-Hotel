@@ -1,6 +1,7 @@
 package pe.edu.utp.SistemaDeReservacionHotel.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.io.Serializable;
@@ -17,7 +18,12 @@ public class Piso implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idPiso;
+
+    @NotNull(message = "El número de piso es obligatorio")
+    @Column(unique = true, nullable = false)
     private Integer numeroPiso;
+
+    @Column(length = 50, nullable = false)
     private String sector;
 
     // un piso puede tener muchas habitaciones
