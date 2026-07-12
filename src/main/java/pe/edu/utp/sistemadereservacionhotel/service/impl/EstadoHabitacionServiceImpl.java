@@ -1,11 +1,12 @@
 package pe.edu.utp.sistemadereservacionhotel.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pe.edu.utp.sistemadereservacionhotel.model.EstadoHabitacion;
-import pe.edu.utp.sistemadereservacionhotel.repository.EstadoHabitacionRepository;
-import pe.edu.utp.sistemadereservacionhotel.service.EstadoHabitacionService;
+import pe.edu.utp.sistemadereservacionhotel.model.habitacion.EstadoHabitacion;
+import pe.edu.utp.sistemadereservacionhotel.repository.habitacion.EstadoHabitacionRepository;
+import pe.edu.utp.sistemadereservacionhotel.service.habitacion.EstadoHabitacionService;
 
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +46,7 @@ public class EstadoHabitacionServiceImpl implements EstadoHabitacionService {
     @Override
     public void delete(Long id) {
         if (!repo.existsById(id)) {
-            throw new RuntimeException("Estado de habitación no encontrado con ID: " + id);
+            throw new ResourceNotFoundException("Estado de habitación no encontrado con ID: " + id);
         }
         repo.deleteById(id);
     }
