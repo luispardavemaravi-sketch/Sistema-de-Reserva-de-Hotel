@@ -1,4 +1,4 @@
-package pe.edu.utp.sistemadereservacionhotel.service.impl;
+package pe.edu.utp.sistemadereservacionhotel.service.habitacion.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

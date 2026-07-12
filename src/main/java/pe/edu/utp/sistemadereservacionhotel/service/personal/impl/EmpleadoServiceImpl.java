@@ -1,4 +1,4 @@
-package pe.edu.utp.sistemadereservacionhotel.service.impl;
+package pe.edu.utp.sistemadereservacionhotel.service.personal.impl;
 
 
 import lombok.RequiredArgsConstructor;
