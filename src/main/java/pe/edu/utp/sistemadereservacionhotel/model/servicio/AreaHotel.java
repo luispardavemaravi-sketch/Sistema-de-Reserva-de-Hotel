@@ -14,15 +14,16 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class AreaHotel implements Serializable {
     private static final long serialVersionUID = 1L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idAreaHotel;
 
     @NotBlank(message = "El nombre del área es obligatorio")
-    @Column(nullable = false, length = 40)
+    @Column(unique = true, nullable = false, length = 100)
     private String nombreArea;
 
     @NotBlank(message = "La ubicación del área es obligatoria")
-    @Column(length = 40)
+    @Column(nullable = false, length = 100)
     private String ubicacion;
 }
