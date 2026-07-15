@@ -1,7 +1,5 @@
-package pe.edu.utp.sistemadereservacionhotel.service.patron.estructural.impl;
+package pe.edu.utp.sistemadereservacionhotel.service.patron.estructural;
 
-
-import pe.edu.utp.sistemadereservacionhotel.service.patron.estructural.ReservaDecorator;
 
 public class EstacionamientoDecorator extends ServicioDecorator {
 

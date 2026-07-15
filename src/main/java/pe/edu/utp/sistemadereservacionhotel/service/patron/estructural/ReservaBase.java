@@ -1,7 +1,6 @@
-package pe.edu.utp.sistemadereservacionhotel.service.patron.estructural.impl;
+package pe.edu.utp.sistemadereservacionhotel.service.patron.estructural;
 
 import pe.edu.utp.sistemadereservacionhotel.model.reserva.Reserva;
-import pe.edu.utp.sistemadereservacionhotel.service.patron.estructural.ReservaDecorator;
 
 public class ReservaBase implements ReservaDecorator {
 

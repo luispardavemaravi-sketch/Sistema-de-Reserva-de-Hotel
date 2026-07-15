@@ -1,6 +1,4 @@
-package pe.edu.utp.sistemadereservacionhotel.service.patron.estructural.impl;
-
-import pe.edu.utp.sistemadereservacionhotel.service.patron.estructural.ReservaDecorator;
+package pe.edu.utp.sistemadereservacionhotel.service.patron.estructural;
 
 public abstract class ServicioDecorator implements ReservaDecorator {
 
