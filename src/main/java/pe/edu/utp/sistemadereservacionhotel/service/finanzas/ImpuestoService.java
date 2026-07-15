@@ -1,26 +1,24 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
-import pe.edu.utp.sistemadereservacionhotel.model.finanzas.Impuesto;
+import pe.edu.utp.sistemadereservacionhotel.dto.ImpuestoDTO;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Contrato de operaciones de negocio para el dominio de impuestos.
+ * Expone métodos transaccionales garantizando el encapsulamiento a través de DTOs.
+ */
 public interface ImpuestoService {
-    Impuesto save(Impuesto impuesto);
 
-    Impuesto update(Impuesto impuesto);
+    ImpuestoDTO registrarImpuesto(ImpuestoDTO dto);
 
-    void delete(Long id);
+    ImpuestoDTO actualizarImpuesto(Long id, ImpuestoDTO dto);
 
-    List<Impuesto> findAll();
+    void eliminarImpuesto(Long id);
 
-    Optional<Impuesto> findById(Long id);
+    List<ImpuestoDTO> listarTodos();
 
-    Optional<Impuesto> findByNombre(String nombre);
+    ImpuestoDTO buscarPorId(Long id);
 
-    List<Impuesto> findByPorcentajeMaximo(Double porcentaje);
-
-    boolean existsByNombre(String nombre);
-
-    long count();
+    ImpuestoDTO buscarPorNombre(String nombre);
 }
