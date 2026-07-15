@@ -1,4 +1,4 @@
-package pe.edu.utp.sistemadereservacionhotel.service.finanzas.Impl;
+package pe.edu.utp.sistemadereservacionhotel.service.finanzas.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

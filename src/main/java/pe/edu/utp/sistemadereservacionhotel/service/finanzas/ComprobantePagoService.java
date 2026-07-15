@@ -1,6 +1,7 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
 import pe.edu.utp.sistemadereservacionhotel.model.finanzas.ComprobantePago;
+import pe.edu.utp.sistemadereservacionhotel.model.reserva.Reserva;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,4 +27,6 @@ public interface ComprobantePagoService {
     List<ComprobantePago> findByRangoMonto(Double min, Double max);
 
     long count();
+
+    ComprobantePago generarComprobante(Reserva reserva, Double monto, String tipo);
 }

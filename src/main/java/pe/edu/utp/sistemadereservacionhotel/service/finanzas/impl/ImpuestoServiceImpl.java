@@ -1,4 +1,4 @@
-package pe.edu.utp.sistemadereservacionhotel.service.finanzas.Impl;
+package pe.edu.utp.sistemadereservacionhotel.service.finanzas.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -6,6 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import pe.edu.utp.sistemadereservacionhotel.model.finanzas.Impuesto;
 import pe.edu.utp.sistemadereservacionhotel.repository.finanzas.ImpuestoRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.finanzas.ImpuestoService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.DuplicadoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,19 +23,18 @@ public class ImpuestoServiceImpl implements ImpuestoService {
     @Override
     public Impuesto save(Impuesto impuesto) {
         if (impuesto.getIdImpuesto() != null)
-            throw new IllegalArgumentException("Para actualizar use el método update");
-        if (repo.existsByNombreImpuesto(impuesto.getNombreImpuesto())) {
-            throw new IllegalArgumentException("Ya existe un impuesto con el nombre: " + impuesto.getNombreImpuesto());
-        }
+            throw new ValidacionException("Para actualizar use el método update");
+        if (repo.existsByNombreImpuesto(impuesto.getNombreImpuesto()))
+            throw new DuplicadoException("Ya existe un impuesto con el nombre: " + impuesto.getNombreImpuesto());
         return repo.save(impuesto);
     }
 
     @Override
     public Impuesto update(Impuesto impuesto) {
         if (impuesto.getIdImpuesto() == null)
-            throw new IllegalArgumentException("El ID no puede ser nulo para actualizar");
+            throw new ValidacionException("El ID no puede ser nulo para actualizar");
         Impuesto existente = repo.findById(impuesto.getIdImpuesto())
-                .orElseThrow(() -> new RuntimeException("Impuesto no encontrado con ID: " + impuesto.getIdImpuesto()));
+                .orElseThrow(() -> new RecursoNoEncontradoException("Impuesto", impuesto.getIdImpuesto()));
         existente.setNombreImpuesto(impuesto.getNombreImpuesto());
         existente.setPorcentaje(impuesto.getPorcentaje());
         return repo.save(existente);
@@ -40,7 +42,8 @@ public class ImpuestoServiceImpl implements ImpuestoService {
 
     @Override
     public void delete(Long id) {
-        if (!repo.existsById(id)) throw new RuntimeException("Impuesto no encontrado con ID: " + id);
+        if (!repo.existsById(id))
+            throw new RecursoNoEncontradoException("Impuesto", id);
         repo.deleteById(id);
     }
 
@@ -53,14 +56,16 @@ public class ImpuestoServiceImpl implements ImpuestoService {
     @Override
     @Transactional(readOnly = true)
     public Optional<Impuesto> findById(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("El ID debe ser positivo");
+        if (id == null || id <= 0)
+            throw new ValidacionException("El ID debe ser positivo");
         return repo.findById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<Impuesto> findByNombre(String nombre) {
-        if (nombre == null || nombre.isBlank()) throw new IllegalArgumentException("El nombre no puede estar vacío");
+        if (nombre == null || nombre.isBlank())
+            throw new ValidacionException("El nombre no puede estar vacío");
         return repo.findByNombreImpuesto(nombre.trim());
     }
 
