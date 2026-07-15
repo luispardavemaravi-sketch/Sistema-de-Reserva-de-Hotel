@@ -7,6 +7,7 @@ import lombok.*;
 import pe.edu.utp.sistemadereservacionhotel.model.personal.Empleado;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
@@ -42,20 +43,14 @@ public class Caja implements Serializable {
     @Column(nullable = false)
     private LocalDate fecha;
 
-    /**
-     * Saldo inicial con el que el empleado inicia su turno.
-     * Valor requerido, no puede ser negativo.
-     */
+    @NotNull(message = "El monto de apertura es obligatorio")
     @PositiveOrZero(message = "El monto de apertura no puede ser negativo")
-    @Column(nullable = false)
-    private Double montoApertura;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal montoApertura;
 
-    /**
-     * Saldo final contabilizado al terminar el turno.
-     * Permitido como nulo mientras el atributo estaAbierta sea verdadero.
-     */
     @PositiveOrZero(message = "El monto de cierre no puede ser negativo")
-    private Double montoCierre;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal montoCierre;
 
     /**
      * Indicador del estado transaccional de la caja.

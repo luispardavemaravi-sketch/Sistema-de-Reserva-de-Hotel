@@ -1,27 +1,26 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
-import pe.edu.utp.sistemadereservacionhotel.model.finanzas.MetodoPago;
+import pe.edu.utp.sistemadereservacionhotel.dto.MetodoPagoDTO;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Servicio paramétrico para el catálogo de medios de pago.
+ * CORRECCIÓN: Entidad MetodoPago reemplazada por MetodoPagoDTO.
+ */
 public interface MetodoPagoService {
-    MetodoPago save(MetodoPago metodoPago);
 
-    MetodoPago update(MetodoPago metodoPago);
+    MetodoPagoDTO registrarMetodoPago(MetodoPagoDTO dto);
 
-    void delete(Long id);
+    MetodoPagoDTO actualizarMetodoPago(Long id, MetodoPagoDTO dto);
 
-    List<MetodoPago> findAll();
+    void eliminarMetodoPago(Long id);
 
-    Optional<MetodoPago> findById(Long id);
+    List<MetodoPagoDTO> listarTodos();
 
-    Optional<MetodoPago> findByNombre(String nombre);
+    MetodoPagoDTO buscarPorId(Long id);
 
-    List<MetodoPago> findByEsDigital(Boolean esDigital);
+    MetodoPagoDTO buscarPorNombre(String nombre);
 
-    boolean existsByNombre(String nombre);
-
-    long count();
+    List<MetodoPagoDTO> buscarPorEsDigital(Boolean esDigital);
 }
-

@@ -11,6 +11,7 @@ import lombok.Setter;
 import pe.edu.utp.sistemadereservacionhotel.model.reserva.Reserva;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -56,11 +57,11 @@ public class ComprobantePago implements Serializable {
      * Sumatoria final del costo de los servicios facturados.
      * Restringido a valores positivos o cero por lógica financiera.
      */
-    @NotNull(message = "El monto total es obligatorio")
-    @PositiveOrZero(message = "El monto total no puede ser negativo")
-    @Column(nullable = false)
-    private Double montoTotal;
 
+    @NotNull(message = "El monto total es obligatorio")
+    @PositiveOrZero(message = "El monto no puede ser negativo")
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal montoTotal;
     /**
      * Vínculo directo con la reserva pagada.
      * Relación uno a uno; un comprobante liquida exactamente una reserva.

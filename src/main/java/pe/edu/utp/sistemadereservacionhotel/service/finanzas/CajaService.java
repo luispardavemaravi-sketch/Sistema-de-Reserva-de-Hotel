@@ -1,29 +1,30 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
-import pe.edu.utp.sistemadereservacionhotel.model.finanzas.Caja;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.CajaAperturaDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.CajaResponseDTO;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Servicio transaccional que orquesta la lógica de negocio para la gestión de cajas.
+ */
 public interface CajaService {
-    Caja save(Caja caja);
 
-    Caja update(Caja caja);
+    CajaResponseDTO abrirCaja(CajaAperturaDTO dto);
 
-    void delete(Long id);
+    CajaResponseDTO cerrarCaja(Long idCaja, BigDecimal montoCierre);
 
-    List<Caja> findAll();
+    void eliminarCaja(Long id);
 
-    Optional<Caja> findById(Long id);
+    CajaResponseDTO buscarPorId(Long id);
 
-    List<Caja> findByEmpleado(Long idEmpleado);
+    List<CajaResponseDTO> listarTodas();
 
-    List<Caja> findByRangoFecha(LocalDate inicio, LocalDate fin);
+    List<CajaResponseDTO> buscarPorEmpleado(Long idEmpleado);
 
-    Optional<Caja> findCajaAbierta();
+    List<CajaResponseDTO> buscarCajasAbiertas();
 
-    List<Caja> findByEstaAbierta(Boolean estaAbierta);
-
-    long count();
+    List<CajaResponseDTO> buscarPorRangoFecha(LocalDate inicio, LocalDate fin);
 }

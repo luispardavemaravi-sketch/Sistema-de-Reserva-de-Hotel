@@ -3,81 +3,103 @@ package pe.edu.utp.sistemadereservacionhotel.service.finanzas.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.DetalleComprobanteRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.DetalleComprobanteResponseDTO;
+import pe.edu.utp.sistemadereservacionhotel.model.finanzas.ComprobantePago;
 import pe.edu.utp.sistemadereservacionhotel.model.finanzas.DetalleComprobante;
+import pe.edu.utp.sistemadereservacionhotel.repository.finanzas.ComprobantePagoRepository;
 import pe.edu.utp.sistemadereservacionhotel.repository.finanzas.DetalleComprobanteRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.finanzas.DetalleComprobanteService;
 import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
-import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class DetalleComprobanteServiceImpl implements DetalleComprobanteService {
 
-    private final DetalleComprobanteRepository repo;
+    private final DetalleComprobanteRepository detalleRepo;
+    private final ComprobantePagoRepository comprobanteRepo;
 
     @Override
-    public DetalleComprobante save(DetalleComprobante detalle) {
-        if (detalle.getIdDetalle() != null)
-            throw new ValidacionException("Para actualizar use el método update");
-        detalle.setSubtotalLinea(detalle.getCantidad() * detalle.getPrecioUnitario());
-        return repo.save(detalle);
+    @Transactional
+    public DetalleComprobanteResponseDTO agregarDetalle(DetalleComprobanteRequestDTO request) {
+        ComprobantePago comprobante = comprobanteRepo.findById(request.idComprobante())
+                .orElseThrow(() -> new RecursoNoEncontradoException("ComprobantePago", request.idComprobante()));
+
+        DetalleComprobante entidad = new DetalleComprobante();
+        entidad.setCantidad(request.cantidad());
+        entidad.setDescripcion(request.descripcion());
+        entidad.setPrecioUnitario(request.precioUnitario());
+
+        // Multiplicación segura con BigDecimal
+        BigDecimal subtotal = request.precioUnitario().multiply(new BigDecimal(request.cantidad()));
+        entidad.setSubtotalLinea(subtotal);
+        entidad.setComprobantePago(comprobante);
+
+        return mapearADto(detalleRepo.save(entidad));
     }
 
     @Override
-    public DetalleComprobante update(DetalleComprobante detalle) {
-        if (detalle.getIdDetalle() == null)
-            throw new ValidacionException("El ID no puede ser nulo para actualizar");
-        DetalleComprobante existente = repo.findById(detalle.getIdDetalle())
-                .orElseThrow(() -> new RecursoNoEncontradoException("DetalleComprobante", detalle.getIdDetalle()));
-        existente.setCantidad(detalle.getCantidad());
-        existente.setDescripcion(detalle.getDescripcion());
-        existente.setPrecioUnitario(detalle.getPrecioUnitario());
-        existente.setSubtotalLinea(detalle.getCantidad() * detalle.getPrecioUnitario());
-        return repo.save(existente);
+    @Transactional
+    public DetalleComprobanteResponseDTO actualizarDetalle(Long id, DetalleComprobanteRequestDTO request) {
+        DetalleComprobante existente = detalleRepo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("DetalleComprobante", id));
+
+        existente.setCantidad(request.cantidad());
+        existente.setDescripcion(request.descripcion());
+        existente.setPrecioUnitario(request.precioUnitario());
+
+        BigDecimal subtotal = request.precioUnitario().multiply(new BigDecimal(request.cantidad()));
+        existente.setSubtotalLinea(subtotal);
+
+        return mapearADto(detalleRepo.save(existente));
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id))
-            throw new RecursoNoEncontradoException("DetalleComprobante", id);
-        repo.deleteById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<DetalleComprobante> findAll() {
-        return repo.findAll();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<DetalleComprobante> findById(Long id) {
-        if (id == null || id <= 0)
-            throw new ValidacionException("El ID debe ser positivo");
-        return repo.findById(id);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<DetalleComprobante> findByComprobante(Long idComprobante) {
-        return repo.findByComprobantePago_IdComprobante(idComprobante);
+    @Transactional
+    public void eliminarDetalle(Long id) {
+        if (!detalleRepo.existsById(id)) throw new RecursoNoEncontradoException("DetalleComprobante", id);
+        detalleRepo.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<DetalleComprobante> findByDescripcion(String descripcion) {
-        if (descripcion == null || descripcion.isBlank())
-            throw new ValidacionException("La descripción no puede estar vacía");
-        return repo.findByDescripcionContainingIgnoreCase(descripcion.trim());
+    public List<DetalleComprobanteResponseDTO> listarTodos() {
+        return detalleRepo.findAll().stream().map(this::mapearADto).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    public DetalleComprobanteResponseDTO buscarPorId(Long id) {
+        return mapearADto(detalleRepo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("DetalleComprobante", id)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DetalleComprobanteResponseDTO> buscarPorComprobante(Long idComprobante) {
+        return detalleRepo.findByComprobantePago_IdComprobante(idComprobante).stream()
+                .map(this::mapearADto).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DetalleComprobanteResponseDTO> buscarPorDescripcion(String descripcion) {
+        return detalleRepo.findByDescripcionContainingIgnoreCase(descripcion).stream()
+                .map(this::mapearADto).collect(Collectors.toList());
+    }
+
+    private DetalleComprobanteResponseDTO mapearADto(DetalleComprobante entidad) {
+        return new DetalleComprobanteResponseDTO(
+                entidad.getIdDetalle(),
+                entidad.getCantidad(),
+                entidad.getDescripcion(),
+                entidad.getPrecioUnitario(),
+                entidad.getSubtotalLinea(),
+                entidad.getComprobantePago().getIdComprobante()
+        );
     }
 }

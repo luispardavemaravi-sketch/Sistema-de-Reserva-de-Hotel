@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
@@ -48,10 +49,11 @@ public class Promocion implements Serializable {
      * Restringido exclusivamente a valores positivos o cero para garantizar
      * la integridad de las operaciones matemáticas en la facturación.
      */
+    // EN TU ENTIDAD Promocion.java DEBES PONER ESTO:
     @NotNull(message = "El porcentaje de descuento es obligatorio")
     @PositiveOrZero(message = "El descuento no puede ser negativo")
-    @Column(nullable = false)
-    private Double porcentajeDescuento;
+    @Column(nullable = false, precision = 5, scale = 2)
+    private BigDecimal porcentajeDescuento; // ESTO ERA UN DOUBLE. CÁMBIALO A BIGDECIMAL.
 
     /**
      * Fecha límite hasta la cual el cupón es válido y puede ser procesado.

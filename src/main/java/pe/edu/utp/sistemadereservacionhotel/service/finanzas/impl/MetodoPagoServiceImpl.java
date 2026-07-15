@@ -3,82 +3,94 @@ package pe.edu.utp.sistemadereservacionhotel.service.finanzas.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.MetodoPagoDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.finanzas.MetodoPago;
 import pe.edu.utp.sistemadereservacionhotel.repository.finanzas.MetodoPagoRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.finanzas.MetodoPagoService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.DuplicadoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class MetodoPagoServiceImpl implements MetodoPagoService {
 
     private final MetodoPagoRepository repo;
 
     @Override
-    public MetodoPago save(MetodoPago metodoPago) {
-        if (metodoPago.getIdMetodo() != null)
-            throw new IllegalArgumentException("Para actualizar use el método update");
-        if (repo.existsByNombreMetodo(metodoPago.getNombreMetodo())) {
-            throw new IllegalArgumentException("Ya existe el método de pago: " + metodoPago.getNombreMetodo());
+    @Transactional
+    public MetodoPagoDTO registrarMetodoPago(MetodoPagoDTO dto) {
+        if (repo.existsByNombreMetodo(dto.nombreMetodo())) {
+            throw new DuplicadoException("Ya existe el método de pago: " + dto.nombreMetodo());
         }
-        return repo.save(metodoPago);
+
+        MetodoPago entidad = new MetodoPago();
+        entidad.setNombreMetodo(dto.nombreMetodo());
+        entidad.setEsDigital(dto.esDigital());
+
+        return mapearADto(repo.save(entidad));
     }
 
     @Override
-    public MetodoPago update(MetodoPago metodoPago) {
-        if (metodoPago.getIdMetodo() == null)
-            throw new IllegalArgumentException("El ID no puede ser nulo para actualizar");
-        MetodoPago existente = repo.findById(metodoPago.getIdMetodo())
-                .orElseThrow(() -> new RuntimeException("Método de pago no encontrado con ID: " + metodoPago.getIdMetodo()));
-        existente.setNombreMetodo(metodoPago.getNombreMetodo());
-        existente.setEsDigital(metodoPago.getEsDigital());
-        return repo.save(existente);
+    @Transactional
+    public MetodoPagoDTO actualizarMetodoPago(Long id, MetodoPagoDTO dto) {
+        MetodoPago existente = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("MétodoPago", id));
+
+        if (!existente.getNombreMetodo().equals(dto.nombreMetodo()) &&
+                repo.existsByNombreMetodo(dto.nombreMetodo())) {
+            throw new DuplicadoException("Ya existe otro método de pago con ese nombre.");
+        }
+
+        existente.setNombreMetodo(dto.nombreMetodo());
+        existente.setEsDigital(dto.esDigital());
+
+        return mapearADto(repo.save(existente));
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id)) throw new RuntimeException("Método de pago no encontrado con ID: " + id);
+    @Transactional
+    public void eliminarMetodoPago(Long id) {
+        if (!repo.existsById(id)) {
+            throw new RecursoNoEncontradoException("MétodoPago", id);
+        }
         repo.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<MetodoPago> findAll() {
-        return repo.findAll();
+    public List<MetodoPagoDTO> listarTodos() {
+        return repo.findAll().stream().map(this::mapearADto).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<MetodoPago> findById(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("El ID debe ser positivo");
-        return repo.findById(id);
+    public MetodoPagoDTO buscarPorId(Long id) {
+        return mapearADto(repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("MétodoPago", id)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<MetodoPago> findByNombre(String nombre) {
-        if (nombre == null || nombre.isBlank()) throw new IllegalArgumentException("El nombre no puede estar vacío");
-        return repo.findByNombreMetodo(nombre.trim());
+    public MetodoPagoDTO buscarPorNombre(String nombre) {
+        return mapearADto(repo.findByNombreMetodo(nombre.trim())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Método no encontrado: " + nombre)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<MetodoPago> findByEsDigital(Boolean esDigital) {
-        return repo.findByEsDigital(esDigital);
+    public List<MetodoPagoDTO> buscarPorEsDigital(Boolean esDigital) {
+        return repo.findByEsDigital(esDigital).stream()
+                .map(this::mapearADto).collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByNombre(String nombre) {
-        return repo.existsByNombreMetodo(nombre.trim());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    private MetodoPagoDTO mapearADto(MetodoPago entidad) {
+        return new MetodoPagoDTO(
+                entidad.getIdMetodo(),
+                entidad.getNombreMetodo(),
+                entidad.getEsDigital()
+        );
     }
 }

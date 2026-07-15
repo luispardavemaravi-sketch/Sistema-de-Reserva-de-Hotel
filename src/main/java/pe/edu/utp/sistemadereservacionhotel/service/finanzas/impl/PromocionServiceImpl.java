@@ -3,6 +3,7 @@ package pe.edu.utp.sistemadereservacionhotel.service.finanzas.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.PromocionDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.finanzas.Promocion;
 import pe.edu.utp.sistemadereservacionhotel.repository.finanzas.PromocionRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.finanzas.PromocionService;
@@ -10,89 +11,100 @@ import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.DuplicadoEx
 import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
 import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class PromocionServiceImpl implements PromocionService {
 
     private final PromocionRepository repo;
 
     @Override
-    public Promocion save(Promocion promocion) {
-        if (promocion.getIdPromocion() != null)
-            throw new ValidacionException("Para actualizar use el método update");
-        if (repo.existsByCodigoCupon(promocion.getCodigoCupon()))
-            throw new DuplicadoException("Ya existe una promoción con el código: " + promocion.getCodigoCupon());
-        if (promocion.getFechaCaducidad().isBefore(LocalDate.now()))
+    @Transactional
+    public PromocionDTO registrarPromocion(PromocionDTO dto) {
+        if (repo.existsByCodigoCupon(dto.codigoCupon())) {
+            throw new DuplicadoException("Ya existe una promoción con el código: " + dto.codigoCupon());
+        }
+        if (dto.fechaCaducidad().isBefore(LocalDate.now())) {
             throw new ValidacionException("La fecha de caducidad no puede ser anterior a hoy");
-        return repo.save(promocion);
+        }
+
+        Promocion entidad = new Promocion();
+        entidad.setCodigoCupon(dto.codigoCupon().toUpperCase());
+        entidad.setPorcentajeDescuento(dto.porcentajeDescuento()); // Ya es BigDecimal
+        entidad.setFechaCaducidad(dto.fechaCaducidad());
+
+        return mapearADto(repo.save(entidad));
     }
 
     @Override
-    public Promocion update(Promocion promocion) {
-        if (promocion.getIdPromocion() == null)
-            throw new ValidacionException("El ID no puede ser nulo para actualizar");
-        Promocion existente = repo.findById(promocion.getIdPromocion())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Promocion", promocion.getIdPromocion()));
-        existente.setPorcentajeDescuento(promocion.getPorcentajeDescuento());
-        existente.setFechaCaducidad(promocion.getFechaCaducidad());
-        return repo.save(existente);
+    @Transactional
+    public PromocionDTO actualizarPromocion(Long id, PromocionDTO dto) {
+        Promocion existente = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Promocion", id));
+
+        if (!existente.getCodigoCupon().equalsIgnoreCase(dto.codigoCupon()) &&
+                repo.existsByCodigoCupon(dto.codigoCupon())) {
+            throw new DuplicadoException("Ya existe otro cupón con ese código.");
+        }
+
+        existente.setCodigoCupon(dto.codigoCupon().toUpperCase());
+        existente.setPorcentajeDescuento(dto.porcentajeDescuento());
+        existente.setFechaCaducidad(dto.fechaCaducidad());
+
+        return mapearADto(repo.save(existente));
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id))
-            throw new RecursoNoEncontradoException("Promocion", id);
+    @Transactional
+    public void eliminarPromocion(Long id) {
+        if (!repo.existsById(id)) throw new RecursoNoEncontradoException("Promocion", id);
         repo.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Promocion> findAll() {
-        return repo.findAll();
+    public List<PromocionDTO> listarTodas() {
+        return repo.findAll().stream().map(this::mapearADto).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Promocion> findById(Long id) {
-        if (id == null || id <= 0)
-            throw new ValidacionException("El ID debe ser positivo");
-        return repo.findById(id);
+    public PromocionDTO buscarPorId(Long id) {
+        return mapearADto(repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Promocion", id)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Promocion> findByCodigoCupon(String codigo) {
-        if (codigo == null || codigo.isBlank())
-            throw new ValidacionException("El código no puede estar vacío");
-        return repo.findByCodigoCupon(codigo.trim().toUpperCase());
+    public PromocionDTO buscarPorCodigoCupon(String codigo) {
+        return mapearADto(repo.findByCodigoCupon(codigo.trim().toUpperCase())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Cupón no encontrado: " + codigo)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Promocion> findVigentes() {
-        return repo.findByFechaCaducidadAfter(LocalDate.now());
+    public List<PromocionDTO> buscarVigentes() {
+        return repo.findByFechaCaducidadAfter(LocalDate.now()).stream()
+                .map(this::mapearADto).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Promocion> findByPorcentajeMinimo(Double porcentaje) {
-        return repo.findByPorcentajeDescuentoGreaterThanEqual(porcentaje);
+    public List<PromocionDTO> buscarPorPorcentajeMinimo(BigDecimal porcentaje) {
+        return repo.findByPorcentajeDescuentoGreaterThanEqual(porcentaje).stream()
+                .map(this::mapearADto).collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByCodigoCupon(String codigo) {
-        return repo.existsByCodigoCupon(codigo.trim().toUpperCase());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    private PromocionDTO mapearADto(Promocion entidad) {
+        return new PromocionDTO(
+                entidad.getIdPromocion(),
+                entidad.getCodigoCupon(),
+                entidad.getPorcentajeDescuento(),
+                entidad.getFechaCaducidad()
+        );
     }
 }

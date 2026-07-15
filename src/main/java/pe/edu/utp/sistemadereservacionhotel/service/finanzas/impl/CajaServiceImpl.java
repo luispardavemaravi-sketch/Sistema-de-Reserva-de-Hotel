@@ -3,96 +3,140 @@ package pe.edu.utp.sistemadereservacionhotel.service.finanzas.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.CajaAperturaDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.CajaResponseDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.finanzas.Caja;
+import pe.edu.utp.sistemadereservacionhotel.model.personal.Empleado;
 import pe.edu.utp.sistemadereservacionhotel.repository.finanzas.CajaRepository;
+import pe.edu.utp.sistemadereservacionhotel.repository.personal.EmpleadoRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.finanzas.CajaService;
 import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.DuplicadoException;
 import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
 import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class CajaServiceImpl implements CajaService {
 
-    private final CajaRepository repo;
+    private final CajaRepository cajaRepo;
+    private final EmpleadoRepository empleadoRepo;
 
     @Override
-    public Caja save(Caja caja) {
-        if (caja.getIdCaja() != null)
-            throw new ValidacionException("Para actualizar use el método update");
-        if (repo.findByEstaAbiertaTrue().isPresent())
-            throw new DuplicadoException("Ya existe una caja abierta");
-        caja.setFecha(LocalDate.now());
-        caja.setEstaAbierta(true);
-        return repo.save(caja);
+    @Transactional
+    public CajaResponseDTO abrirCaja(CajaAperturaDTO dto) {
+        // 1. Validar existencia del empleado
+        Empleado empleado = empleadoRepo.findById(dto.idEmpleado())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Empleado", dto.idEmpleado()));
+
+        // 2. Regla de Negocio: Un empleado no puede tener más de una caja abierta a la vez
+        boolean tieneCajaAbierta = cajaRepo.findByEmpleado_IdEmpleado(dto.idEmpleado())
+                .stream()
+                .anyMatch(Caja::getEstaAbierta);
+
+        if (tieneCajaAbierta) {
+            throw new DuplicadoException("El empleado ya posee una sesión de caja abierta en este momento.");
+        }
+
+        // 3. Construcción y Persistencia
+        Caja nuevaCaja = new Caja();
+        nuevaCaja.setFecha(LocalDate.now(ZoneId.of("America/Lima")));
+        nuevaCaja.setMontoApertura(dto.montoApertura());
+        nuevaCaja.setEstaAbierta(true);
+        nuevaCaja.setEmpleado(empleado);
+
+        Caja cajaGuardada = cajaRepo.save(nuevaCaja);
+
+        return mapearADto(cajaGuardada);
     }
 
     @Override
-    public Caja update(Caja caja) {
-        if (caja.getIdCaja() == null)
-            throw new ValidacionException("El ID no puede ser nulo para actualizar");
-        Caja existente = repo.findById(caja.getIdCaja())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Caja", caja.getIdCaja()));
-        existente.setMontoCierre(caja.getMontoCierre());
-        existente.setEstaAbierta(caja.getEstaAbierta());
-        return repo.save(existente);
+    @Transactional
+    public CajaResponseDTO cerrarCaja(Long idCaja, BigDecimal montoCierre) {
+        if (montoCierre == null || montoCierre.signum() < 0) {
+            throw new ValidacionException("El monto de cierre no puede ser nulo ni negativo.");
+        }
+
+        Caja caja = cajaRepo.findById(idCaja)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Caja", idCaja));
+
+        if (!caja.getEstaAbierta()) {
+            throw new ValidacionException("La caja seleccionada ya se encuentra cerrada.");
+        }
+
+        caja.setMontoCierre(montoCierre);
+        caja.setEstaAbierta(false);
+
+        Caja cajaCerrada = cajaRepo.save(caja);
+        return mapearADto(cajaCerrada);
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id))
+    @Transactional
+    public void eliminarCaja(Long id) {
+        if (!cajaRepo.existsById(id)) {
             throw new RecursoNoEncontradoException("Caja", id);
-        repo.deleteById(id);
+        }
+        cajaRepo.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Caja> findAll() {
-        return repo.findAll();
+    public CajaResponseDTO buscarPorId(Long id) {
+        Caja caja = cajaRepo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Caja", id));
+        return mapearADto(caja);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Caja> findById(Long id) {
-        if (id == null || id <= 0)
-            throw new ValidacionException("El ID debe ser positivo");
-        return repo.findById(id);
+    public List<CajaResponseDTO> listarTodas() {
+        return cajaRepo.findAll().stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Caja> findByEmpleado(Long idEmpleado) {
-        return repo.findByEmpleado_IdEmpleado(idEmpleado);
+    public List<CajaResponseDTO> buscarPorEmpleado(Long idEmpleado) {
+        return cajaRepo.findByEmpleado_IdEmpleado(idEmpleado).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Caja> findByRangoFecha(LocalDate inicio, LocalDate fin) {
-        if (inicio.isAfter(fin))
-            throw new ValidacionException("Fecha inicio no puede ser posterior a fecha fin");
-        return repo.findByFechaBetween(inicio, fin);
+    public List<CajaResponseDTO> buscarCajasAbiertas() {
+        return cajaRepo.findByEstaAbiertaTrue().stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Caja> findCajaAbierta() {
-        return repo.findByEstaAbiertaTrue();
+    public List<CajaResponseDTO> buscarPorRangoFecha(LocalDate inicio, LocalDate fin) {
+        if (inicio.isAfter(fin)) {
+            throw new ValidacionException("La fecha de inicio no puede ser posterior a la fecha final.");
+        }
+        return cajaRepo.findByFechaBetween(inicio, fin).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Caja> findByEstaAbierta(Boolean estaAbierta) {
-        return repo.findByEstaAbierta(estaAbierta);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    // Mapeo manual estandarizado
+    private CajaResponseDTO mapearADto(Caja entidad) {
+        return new CajaResponseDTO(
+                entidad.getIdCaja(),
+                entidad.getFecha(),
+                entidad.getMontoApertura(),
+                entidad.getMontoCierre(),
+                entidad.getEstaAbierta(),
+                entidad.getEmpleado().getIdEmpleado()
+        );
     }
 }

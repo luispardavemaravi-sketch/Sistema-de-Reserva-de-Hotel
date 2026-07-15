@@ -1,24 +1,27 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
-import pe.edu.utp.sistemadereservacionhotel.model.finanzas.DetalleComprobante;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.DetalleComprobanteRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.DetalleComprobanteResponseDTO;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Servicio para la gestión de las líneas de detalle de facturación.
+ * CORRECCIÓN: Refactorizado para usar DTOs y aislar la capa de persistencia.
+ */
 public interface DetalleComprobanteService {
-    DetalleComprobante save(DetalleComprobante detalle);
 
-    DetalleComprobante update(DetalleComprobante detalle);
+    DetalleComprobanteResponseDTO agregarDetalle(DetalleComprobanteRequestDTO request);
 
-    void delete(Long id);
+    DetalleComprobanteResponseDTO actualizarDetalle(Long id, DetalleComprobanteRequestDTO request);
 
-    List<DetalleComprobante> findAll();
+    void eliminarDetalle(Long id);
 
-    Optional<DetalleComprobante> findById(Long id);
+    List<DetalleComprobanteResponseDTO> listarTodos();
 
-    List<DetalleComprobante> findByComprobante(Long idComprobante);
+    DetalleComprobanteResponseDTO buscarPorId(Long id);
 
-    List<DetalleComprobante> findByDescripcion(String descripcion);
+    List<DetalleComprobanteResponseDTO> buscarPorComprobante(Long idComprobante);
 
-    long count();
+    List<DetalleComprobanteResponseDTO> buscarPorDescripcion(String descripcion);
 }

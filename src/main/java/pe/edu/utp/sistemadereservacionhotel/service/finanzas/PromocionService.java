@@ -1,28 +1,29 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
-import pe.edu.utp.sistemadereservacionhotel.model.finanzas.Promocion;
+import pe.edu.utp.sistemadereservacionhotel.dto.PromocionDTO;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Servicio de validación y control para los cupones y campañas promocionales.
+ * CORRECCIÓN: Refactorizado a DTOs y reemplazo crítico de Double por BigDecimal.
+ */
 public interface PromocionService {
-    Promocion save(Promocion promocion);
 
-    Promocion update(Promocion promocion);
+    PromocionDTO registrarPromocion(PromocionDTO dto);
 
-    void delete(Long id);
+    PromocionDTO actualizarPromocion(Long id, PromocionDTO dto);
 
-    List<Promocion> findAll();
+    void eliminarPromocion(Long id);
 
-    Optional<Promocion> findById(Long id);
+    List<PromocionDTO> listarTodas();
 
-    Optional<Promocion> findByCodigoCupon(String codigo);
+    PromocionDTO buscarPorId(Long id);
 
-    List<Promocion> findVigentes();
+    PromocionDTO buscarPorCodigoCupon(String codigo);
 
-    List<Promocion> findByPorcentajeMinimo(Double porcentaje);
+    List<PromocionDTO> buscarVigentes();
 
-    boolean existsByCodigoCupon(String codigo);
-
-    long count();
+    List<PromocionDTO> buscarPorPorcentajeMinimo(BigDecimal porcentaje);
 }
