@@ -1,7 +1,7 @@
 package pe.edu.utp.sistemadereservacionhotel.service.reserva;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.request.AcompananteRequestDTO;
-import pe.edu.utp.sistemadereservacionhotel.dto.response.AcompananteResponseDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.reserva.AcompananteRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.reserva.AcompananteResponseDTO;
 
 import java.util.List;
 

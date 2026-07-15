@@ -1,7 +1,7 @@
 package pe.edu.utp.sistemadereservacionhotel.service.reserva;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.request.CheckInRequestDTO;
-import pe.edu.utp.sistemadereservacionhotel.dto.response.CheckInResponseDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.reserva.CheckInRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.reserva.CheckInResponseDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;

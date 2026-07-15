@@ -1,7 +1,7 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion;
 
 
-import pe.edu.utp.sistemadereservacionhotel.dto.PisoDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.habitacion.PisoDTO;
 
 import java.util.List;
 

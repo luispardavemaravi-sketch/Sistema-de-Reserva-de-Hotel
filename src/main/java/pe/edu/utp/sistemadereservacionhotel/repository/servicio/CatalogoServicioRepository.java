@@ -15,9 +15,10 @@ import java.util.List;
 public interface CatalogoServicioRepository extends JpaRepository<CatalogoServicio, Long> {
 
     /**
-     * Filtra el catálogo en base a la categoría estructurada del servicio.
+     * Filtra el catálogo con base en la categoría estructurada del servicio.
      * CAMBIO CRÍTICO: Refactorizado de String al Enum CategoriaServicio para evitar colapso de JPA.
      */
+
     List<CatalogoServicio> findByCategoria(CategoriaServicio categoria);
 
     /**

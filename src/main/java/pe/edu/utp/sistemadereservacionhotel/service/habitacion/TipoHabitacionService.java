@@ -1,13 +1,12 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.TipoHabitacionDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.habitacion.TipoHabitacionDTO;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 public interface TipoHabitacionService {
-    // ELIMINADO save() y update() genéricos.
-    // Usamos métodos de intención de negocio.
+
     TipoHabitacionDTO registrarTipo(TipoHabitacionDTO dto);
 
     TipoHabitacionDTO actualizarTipo(Long id, TipoHabitacionDTO dto);

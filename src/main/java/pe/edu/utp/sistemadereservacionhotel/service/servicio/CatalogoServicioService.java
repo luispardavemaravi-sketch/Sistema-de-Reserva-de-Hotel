@@ -1,26 +1,49 @@
 package pe.edu.utp.sistemadereservacionhotel.service.servicio;
 
-import pe.edu.utp.sistemadereservacionhotel.model.servicio.CatalogoServicio;
-
+import pe.edu.utp.sistemadereservacionhotel.dto.servicio.CatalogoServicioDTO;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Contrato de negocio para la gestión del catálogo de servicios adicionales.
+ * Orquesta la lógica de precios y categorización para la facturación.
+ */
 public interface CatalogoServicioService {
-    CatalogoServicio save(CatalogoServicio catalogo);
 
-    CatalogoServicio update(CatalogoServicio catalogo);
+    /**
+     * Registra un nuevo servicio en el catálogo.
+     * @param dto Datos del servicio a catalogar.
+     * @return El DTO persistido con su ID.
+     */
+    CatalogoServicioDTO registrarEnCatalogo(CatalogoServicioDTO dto);
 
-    void delete(Long id);
+    /**
+     * Actualiza los datos financieros o categóricos de un ítem del catálogo.
+     */
+    CatalogoServicioDTO actualizarEnCatalogo(Long id, CatalogoServicioDTO dto);
 
-    List<CatalogoServicio> findAll();
+    /**
+     * Retira un servicio del catálogo activo.
+     */
+    void eliminarDelCatalogo(Long id);
 
-    Optional<CatalogoServicio> findById(Long id);
+    /**
+     * Lista todos los servicios disponibles en el catálogo.
+     */
+    List<CatalogoServicioDTO> listarTodos();
 
-    List<CatalogoServicio> findByCategoria(String categoria);
+    /**
+     * Busca un ítem del catálogo por su identificador único.
+     */
+    CatalogoServicioDTO buscarPorId(Long id);
 
-    List<CatalogoServicio> findByServicio(Long idServicio);
+    /**
+     * Filtra servicios por su categoría comercial.
+     */
+    List<CatalogoServicioDTO> buscarPorCategoria(String categoria);
 
-    List<CatalogoServicio> findByPrecioMaximo(Double precio);
-
-    long count();
+    /**
+     * Filtra servicios según un límite de precio máximo para reportes de presupuesto.
+     */
+    List<CatalogoServicioDTO> buscarPorPrecioMaximo(BigDecimal precioMaximo);
 }

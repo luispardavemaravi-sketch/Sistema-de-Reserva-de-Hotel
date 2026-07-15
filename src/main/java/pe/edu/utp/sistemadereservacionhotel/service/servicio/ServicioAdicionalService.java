@@ -1,30 +1,59 @@
 package pe.edu.utp.sistemadereservacionhotel.service.servicio;
 
-import pe.edu.utp.sistemadereservacionhotel.model.servicio.ServicioAdicional;
-
+import pe.edu.utp.sistemadereservacionhotel.dto.servicio.ServicioAdicionalDTO;
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Contrato de servicio para la gestión del inventario de servicios adicionales.
+ * Este servicio se encarga de la administración de las definiciones de servicios,
+ * excluyendo la gestión de precios, la cual se delega a CatalogoServicioService.
+ */
 public interface ServicioAdicionalService {
-    ServicioAdicional save(ServicioAdicional servicio);
 
-    ServicioAdicional update(ServicioAdicional servicio);
+    /**
+     * Registra un nuevo servicio en el inventario.
+     * @param dto Datos del servicio a registrar.
+     * @return El DTO registrado con su identificador generado.
+     */
+    ServicioAdicionalDTO registrarServicio(ServicioAdicionalDTO dto);
 
-    void delete(Long id);
+    /**
+     * Actualiza la información operativa de un servicio existente.
+     */
+    ServicioAdicionalDTO actualizarServicio(Long id, ServicioAdicionalDTO dto);
 
-    List<ServicioAdicional> findAll();
+    /**
+     * Elimina un servicio del inventario mediante su identificador.
+     */
+    void eliminarServicio(Long id);
 
-    Optional<ServicioAdicional> findById(Long id);
+    /**
+     * Retorna el listado completo de servicios definidos.
+     */
+    List<ServicioAdicionalDTO> listarTodos();
 
-    Optional<ServicioAdicional> findByNombre(String nombre);
+    /**
+     * Busca un servicio por su identificador único.
+     */
+    ServicioAdicionalDTO buscarPorId(Long id);
 
-    List<ServicioAdicional> findByNombreContaining(String nombre);
+    /**
+     * Busca un servicio exacto por su nombre comercial.
+     */
+    ServicioAdicionalDTO buscarPorNombre(String nombre);
 
-    List<ServicioAdicional> findByEstaDisponible(Boolean disponible);
+    /**
+     * Busca servicios cuyo nombre contenga la cadena proporcionada.
+     */
+    List<ServicioAdicionalDTO> buscarPorNombreContiene(String nombre);
 
-    List<ServicioAdicional> findByPrecioMaximo(Double precio);
+    /**
+     * Filtra los servicios según su estado actual de disponibilidad.
+     */
+    List<ServicioAdicionalDTO> buscarPorDisponibilidad(Boolean disponible);
 
-    boolean existsByNombre(String nombre);
-
-    long count();
+    /**
+     * Verifica si un servicio ya existe en el sistema para prevenir duplicados.
+     */
+    boolean existePorNombre(String nombre);
 }

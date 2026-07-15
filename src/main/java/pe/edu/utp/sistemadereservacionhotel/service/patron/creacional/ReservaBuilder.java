@@ -8,6 +8,7 @@ import pe.edu.utp.sistemadereservacionhotel.model.huesped.Huesped;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 public class ReservaBuilder {
 
@@ -40,7 +41,7 @@ public class ReservaBuilder {
         if (fecha == null) {
             throw new IllegalArgumentException("La fecha de entrada no puede ser nula");
         }
-        if (fecha.isBefore(LocalDate.now())) {
+        if (fecha.isBefore(LocalDate.now(ZoneId.of("America/Lima")))) {
             throw new IllegalArgumentException("La fecha de entrada no puede ser anterior a hoy");
         }
         this.fechaEntradaPlanificada = fecha;
@@ -51,7 +52,7 @@ public class ReservaBuilder {
         if (fecha == null) {
             throw new IllegalArgumentException("La fecha de salida no puede ser nula");
         }
-        if (fecha.isBefore(LocalDate.now())) {
+        if (fecha.isBefore(LocalDate.now(ZoneId.of("America/Lima")))) {
             throw new IllegalArgumentException("La fecha de salida no puede ser anterior a hoy");
         }
         this.fechaSalidaPlanificada = fecha;

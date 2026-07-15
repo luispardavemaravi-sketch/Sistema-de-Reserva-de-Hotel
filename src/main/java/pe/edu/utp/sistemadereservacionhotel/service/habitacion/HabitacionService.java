@@ -1,7 +1,7 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.request.HabitacionRequestDTO;
-import pe.edu.utp.sistemadereservacionhotel.dto.response.HabitacionResponseDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.habitacion.HabitacionRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.habitacion.HabitacionResponseDTO;
 
 import java.math.BigDecimal;
 import java.util.List;

@@ -1,7 +1,7 @@
 package pe.edu.utp.sistemadereservacionhotel.service.personal;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.request.EmpleadoRequestDTO;
-import pe.edu.utp.sistemadereservacionhotel.dto.response.EmpleadoResponseDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.personal.EmpleadoRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.personal.EmpleadoResponseDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.personal.CargoEmpleado;
 
 import java.util.List;

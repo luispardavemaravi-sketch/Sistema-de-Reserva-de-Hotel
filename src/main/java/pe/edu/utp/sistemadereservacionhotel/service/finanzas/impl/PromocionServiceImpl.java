@@ -3,7 +3,7 @@ package pe.edu.utp.sistemadereservacionhotel.service.finanzas.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pe.edu.utp.sistemadereservacionhotel.dto.PromocionDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.finanzas.PromocionDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.finanzas.Promocion;
 import pe.edu.utp.sistemadereservacionhotel.repository.finanzas.PromocionRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.finanzas.PromocionService;
@@ -13,6 +13,7 @@ import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionE
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,7 +35,7 @@ public class PromocionServiceImpl implements PromocionService {
         if (repo.existsByCodigoCupon(dto.codigoCupon())) {
             throw new DuplicadoException("Ya existe una promoción con el código: " + dto.codigoCupon());
         }
-        if (dto.fechaCaducidad().isBefore(LocalDate.now())) {
+        if (dto.fechaCaducidad().isBefore(LocalDate.now(ZoneId.of("America/Lima")))) {
             throw new ValidacionException("La fecha de caducidad no puede ser anterior a hoy");
         }
 
@@ -73,7 +74,7 @@ public class PromocionServiceImpl implements PromocionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PromocionDTO> listarTodas() {
+    public List<PromocionDTO> listarTodos() {
         return repo.findAll().stream().map(this::mapearADto).collect(Collectors.toList());
     }
 
@@ -94,7 +95,7 @@ public class PromocionServiceImpl implements PromocionService {
     @Override
     @Transactional(readOnly = true)
     public List<PromocionDTO> buscarVigentes() {
-        return repo.findByFechaCaducidadAfter(LocalDate.now()).stream()
+        return repo.findByFechaCaducidadAfter(LocalDate.now(ZoneId.of("America/Lima"))).stream()
                 .map(this::mapearADto).collect(Collectors.toList());
     }
 

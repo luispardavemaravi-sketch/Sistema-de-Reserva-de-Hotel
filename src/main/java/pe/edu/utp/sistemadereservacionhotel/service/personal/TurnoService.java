@@ -1,6 +1,6 @@
 package pe.edu.utp.sistemadereservacionhotel.service.personal;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.TurnoDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.personal.TurnoDTO;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;

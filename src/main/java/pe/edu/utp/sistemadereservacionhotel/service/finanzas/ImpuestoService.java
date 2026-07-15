@@ -1,6 +1,6 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.ImpuestoDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.finanzas.ImpuestoDTO;
 
 import java.util.List;
 

@@ -1,27 +1,18 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion;
 
-import pe.edu.utp.sistemadereservacionhotel.model.habitacion.EstadoHabitacion;
+import pe.edu.utp.sistemadereservacionhotel.dto.habitacion.EstadoHabitacionDTO;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface EstadoHabitacionService {
 
-    EstadoHabitacion save(EstadoHabitacion estadoHabitacion);
+    EstadoHabitacionDTO registrar(EstadoHabitacionDTO dto);
 
-    EstadoHabitacion update(EstadoHabitacion estadoHabitacion);
+    EstadoHabitacionDTO actualizar(Long id, EstadoHabitacionDTO dto);
 
-    void delete(Long id);
+    void eliminar(Long id);
 
-    List<EstadoHabitacion> findAll();
+    List<EstadoHabitacionDTO> listarTodos();
 
-    Optional<EstadoHabitacion> findById(Long id);
-
-    Optional<EstadoHabitacion> findByNombreEstado(String nombreEstado);
-
-    List<EstadoHabitacion> findByEsReservable(Boolean esReservable);
-
-    boolean existsByNombreEstado(String nombreEstado);
-
-    long count();
+    EstadoHabitacionDTO buscarPorId(Long id);
 }

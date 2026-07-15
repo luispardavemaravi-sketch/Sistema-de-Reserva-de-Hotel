@@ -1,7 +1,7 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.request.DetalleComprobanteRequestDTO;
-import pe.edu.utp.sistemadereservacionhotel.dto.response.DetalleComprobanteResponseDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.finanzas.DetalleComprobanteRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.finanzas.DetalleComprobanteResponseDTO;
 
 import java.util.List;
 

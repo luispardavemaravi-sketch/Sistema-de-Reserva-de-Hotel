@@ -3,84 +3,99 @@ package pe.edu.utp.sistemadereservacionhotel.service.servicio.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.servicio.CatalogoServicioDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.servicio.CatalogoServicio;
+import pe.edu.utp.sistemadereservacionhotel.model.servicio.CategoriaServicio;
 import pe.edu.utp.sistemadereservacionhotel.repository.servicio.CatalogoServicioRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.servicio.CatalogoServicioService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.*;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * Implementación de los servicios del catálogo.
+ * Gestiona la transformación entre DTO y Entidades, asegurando la integridad
+ * mediante el uso de Enums y excepciones de dominio.
+ */
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class CatalogoServicioServiceImpl implements CatalogoServicioService {
 
     private final CatalogoServicioRepository repo;
+    private static final String ENTIDAD = "Catálogo de Servicios";
 
     @Override
-    public CatalogoServicio save(CatalogoServicio catalogo) {
-        if (catalogo.getIdCatalogo() != null) {
-            throw new IllegalArgumentException("Para actualizar use el método update");
-        }
-        return repo.save(catalogo);
+    @Transactional
+    public CatalogoServicioDTO registrarEnCatalogo(CatalogoServicioDTO dto) {
+        CatalogoServicio entidad = new CatalogoServicio();
+        entidad.setPrecioVigente(dto.precio());
+        // Conversión segura de String a Enum
+        entidad.setCategoria(CategoriaServicio.valueOf(dto.categoria().toUpperCase()));
+        return mapearADto(repo.save(entidad));
     }
 
     @Override
-    public CatalogoServicio update(CatalogoServicio catalogo) {
-        if (catalogo.getIdCatalogo() == null) {
-            throw new IllegalArgumentException("El ID no puede ser nulo para actualizar");
-        }
-        CatalogoServicio existente = repo.findById(catalogo.getIdCatalogo())
-                .orElseThrow(() -> new RuntimeException("Catálogo no encontrado con ID: " + catalogo.getIdCatalogo()));
-        existente.setPrecioVigente(catalogo.getPrecioVigente());
-        existente.setCategoria(catalogo.getCategoria());
-        existente.setServicioAdicional(catalogo.getServicioAdicional());
-        return repo.save(existente);
+    @Transactional
+    public CatalogoServicioDTO actualizarEnCatalogo(Long id, CatalogoServicioDTO dto) {
+        CatalogoServicio existente = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
+
+        existente.setPrecioVigente(dto.precio());
+        // Conversión segura de String a Enum
+        existente.setCategoria(CategoriaServicio.valueOf(dto.categoria().toUpperCase()));
+        return mapearADto(repo.save(existente));
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id)) throw new RuntimeException("Catálogo no encontrado con ID: " + id);
+    @Transactional
+    public void eliminarDelCatalogo(Long id) {
+        if (!repo.existsById(id)) throw new RecursoNoEncontradoException(ENTIDAD, id);
         repo.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CatalogoServicio> findAll() {
-        return repo.findAll();
+    public List<CatalogoServicioDTO> listarTodos() {
+        return repo.findAll().stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<CatalogoServicio> findById(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("El ID debe ser positivo");
-        return repo.findById(id);
+    public CatalogoServicioDTO buscarPorId(Long id) {
+        return mapearADto(repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CatalogoServicio> findByCategoria(String categoria) {
-        if (categoria == null || categoria.isBlank())
-            throw new IllegalArgumentException("La categoría no puede estar vacía");
-        return repo.findByCategoria(categoria.trim());
+    public List<CatalogoServicioDTO> buscarPorCategoria(String categoria) {
+        // Conversión de String a Enum para filtrar en base de datos
+        CategoriaServicio enumCategoria = CategoriaServicio.valueOf(categoria.toUpperCase());
+        return repo.findByCategoria(enumCategoria).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CatalogoServicio> findByServicio(Long idServicio) {
-        return repo.findByServicioAdicional_IdServicio(idServicio);
+    public List<CatalogoServicioDTO> buscarPorPrecioMaximo(BigDecimal precioMaximo) {
+        if (precioMaximo == null || precioMaximo.signum() < 0) {
+            throw new ValidacionException("El precio máximo no puede ser negativo.");
+        }
+        return repo.findByPrecioVigenteLessThanEqual(precioMaximo).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<CatalogoServicio> findByPrecioMaximo(Double precio) {
-        if (precio < 0) throw new IllegalArgumentException("El precio no puede ser negativo");
-        return repo.findByPrecioVigenteLessThanEqual(precio);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    /**
+     * Mapeador interno para transformar la entidad a DTO.
+     * Convierte el Enum de la entidad a String para el DTO.
+     */
+    private CatalogoServicioDTO mapearADto(CatalogoServicio e) {
+        return new CatalogoServicioDTO(e.getIdCatalogo(), e.getCategoria().name(), e.getPrecioVigente());
     }
 }

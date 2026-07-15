@@ -1,6 +1,6 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.PromocionDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.finanzas.PromocionDTO;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,7 +17,7 @@ public interface PromocionService {
 
     void eliminarPromocion(Long id);
 
-    List<PromocionDTO> listarTodas();
+    List<PromocionDTO> listarTodos();
 
     PromocionDTO buscarPorId(Long id);
 

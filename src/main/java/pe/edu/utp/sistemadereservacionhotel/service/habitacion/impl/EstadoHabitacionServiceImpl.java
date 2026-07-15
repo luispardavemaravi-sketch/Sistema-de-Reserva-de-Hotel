@@ -1,98 +1,69 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.habitacion.EstadoHabitacionDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.habitacion.EstadoHabitacion;
 import pe.edu.utp.sistemadereservacionhotel.repository.habitacion.EstadoHabitacionRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.habitacion.EstadoHabitacionService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class EstadoHabitacionServiceImpl implements EstadoHabitacionService {
 
     private final EstadoHabitacionRepository repo;
 
     @Override
-    public EstadoHabitacion save(EstadoHabitacion estadoHabitacion) {
-        if (estadoHabitacion.getIdEstado() != null) {
-            throw new IllegalArgumentException("Para actualizar use el método update");
+    @Transactional
+    public EstadoHabitacionDTO registrar(EstadoHabitacionDTO dto) {
+        if (repo.existsByNombreEstado(dto.nombreEstado())) {
+            throw new IllegalArgumentException("Ya existe un estado: " + dto.nombreEstado());
         }
-        if (repo.existsByNombreEstado(estadoHabitacion.getNombreEstado())) {
-            throw new IllegalArgumentException("Ya existe un estado con el nombre: " + estadoHabitacion.getNombreEstado());
-        }
-        return repo.save(estadoHabitacion);
+        EstadoHabitacion entidad = new EstadoHabitacion();
+        entidad.setNombreEstado(dto.nombreEstado());
+        return mapearADto(repo.save(entidad));
     }
 
     @Override
-    public EstadoHabitacion update(EstadoHabitacion estadoHabitacion) {
-        if (estadoHabitacion.getIdEstado() == null) {
-            throw new IllegalArgumentException("El ID no puede ser nulo para actualizar");
-        }
-        EstadoHabitacion existente = repo.findById(estadoHabitacion.getIdEstado())
-                .orElseThrow(() -> new RuntimeException("Estado no encontrado con ID: " + estadoHabitacion.getIdEstado()));
+    @Transactional
+    public EstadoHabitacionDTO actualizar(Long id, EstadoHabitacionDTO dto) {
+        EstadoHabitacion existente = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("EstadoHabitacion", id));
 
-        existente.setNombreEstado(estadoHabitacion.getNombreEstado());
-        existente.setEsReservable(estadoHabitacion.getEsReservable());
-
-        return repo.save(existente);
+        existente.setNombreEstado(dto.nombreEstado());
+        return mapearADto(repo.save(existente));
     }
 
     @Override
-    public void delete(Long id) {
+    @Transactional
+    public void eliminar(Long id) {
         if (!repo.existsById(id)) {
-            throw new ResourceNotFoundException("Estado de habitación no encontrado con ID: " + id);
+            throw new RecursoNoEncontradoException("EstadoHabitacion", id);
         }
         repo.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<EstadoHabitacion> findAll() {
-        return repo.findAll();
+    public List<EstadoHabitacionDTO> listarTodos() {
+        return repo.findAll().stream().map(this::mapearADto).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<EstadoHabitacion> findById(Long id) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("El ID debe ser un número positivo");
-        }
-        return repo.findById(id);
+    public EstadoHabitacionDTO buscarPorId(Long id) {
+        return mapearADto(repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("EstadoHabitacion", id)));
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<EstadoHabitacion> findByNombreEstado(String nombreEstado) {
-        if (nombreEstado == null || nombreEstado.isBlank()) {
-            throw new IllegalArgumentException("El nombre del estado no puede estar vacío");
-        }
-        return repo.findByNombreEstado(nombreEstado.trim());
-    }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<EstadoHabitacion> findByEsReservable(Boolean esReservable) {
-        if (esReservable == null) {
-            throw new IllegalArgumentException("El parámetro esReservable no puede ser nulo");
-        }
-        return repo.findByEsReservable(esReservable);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByNombreEstado(String nombreEstado) {
-        return repo.existsByNombreEstado(nombreEstado.trim());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    private EstadoHabitacionDTO mapearADto(EstadoHabitacion e) {
+        return new EstadoHabitacionDTO(e.getIdEstado(), e.getNombreEstado());
     }
 }

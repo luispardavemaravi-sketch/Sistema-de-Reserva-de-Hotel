@@ -1,7 +1,7 @@
 package pe.edu.utp.sistemadereservacionhotel.service.finanzas;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.request.CajaAperturaDTO;
-import pe.edu.utp.sistemadereservacionhotel.dto.response.CajaResponseDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.finanzas.CajaAperturaDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.finanzas.CajaResponseDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

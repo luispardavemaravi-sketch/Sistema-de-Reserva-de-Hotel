@@ -3,7 +3,7 @@ package pe.edu.utp.sistemadereservacionhotel.service.habitacion.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pe.edu.utp.sistemadereservacionhotel.dto.EquipamientoDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.habitacion.EquipamientoDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.habitacion.Equipamiento;
 import pe.edu.utp.sistemadereservacionhotel.repository.habitacion.EquipamientoRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.habitacion.EquipamientoService;

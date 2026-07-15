@@ -1,12 +1,12 @@
 package pe.edu.utp.sistemadereservacionhotel.service.servicio;
 
-import pe.edu.utp.sistemadereservacionhotel.dto.AreaHotelDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.servicio.AreaHotelDTO;
 import java.util.List;
 
 /**
  * Contrato de servicio para la gestión operativa de áreas del hotel.
  * Orquesta la lógica de negocio y garantiza la integridad de los datos
- * mediante el uso de objetos de transferencia (DTOs).
+ * mediante el uso de objetos de transferencia (DTO).
  */
 public interface AreaHotelService {
 

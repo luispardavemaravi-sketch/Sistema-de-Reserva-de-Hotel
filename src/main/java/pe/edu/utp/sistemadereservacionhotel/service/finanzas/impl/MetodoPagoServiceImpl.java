@@ -3,7 +3,7 @@ package pe.edu.utp.sistemadereservacionhotel.service.finanzas.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import pe.edu.utp.sistemadereservacionhotel.dto.MetodoPagoDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.finanzas.MetodoPagoDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.finanzas.MetodoPago;
 import pe.edu.utp.sistemadereservacionhotel.repository.finanzas.MetodoPagoRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.finanzas.MetodoPagoService;
