@@ -12,8 +12,9 @@ public class ReservaBase implements ReservaDecorator {
 
     @Override
     public double calcularCostoTotal() {
+        // Si el monto es nulo, retorna 0.0, si no convierte el BigDecimal a double
         return reserva.getMontoTotalEstimado() != null
-                ? reserva.getMontoTotalEstimado()
+                ? reserva.getMontoTotalEstimado().doubleValue()
                 : 0.0;
     }
 

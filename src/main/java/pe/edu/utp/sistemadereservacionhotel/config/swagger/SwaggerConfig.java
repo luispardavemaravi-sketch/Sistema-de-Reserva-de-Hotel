@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * Configuración de Swagger/OpenAPI para el Sistema de Reservación de Hotel.
- * Acceso: http://localhost:8080/swagger-ui/index.html
+     * Acceso: http://localhost:8080/swagger-ui/index.html
  */
 @Configuration
 public class SwaggerConfig {

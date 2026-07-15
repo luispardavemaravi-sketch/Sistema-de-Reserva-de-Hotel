@@ -18,7 +18,7 @@ import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionE
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +27,7 @@ public class HabitacionServiceImpl implements HabitacionService {
     private final HabitacionRepository habitacionRepo;
     private final PisoRepository pisoRepo;
     private final TipoHabitacionRepository tipoHabitacionRepo;
+    private static final String RECURSO_HABITACION = "Habitacion";
 
     @Override
     @Transactional
@@ -39,7 +40,7 @@ public class HabitacionServiceImpl implements HabitacionService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Piso", dto.idPiso()));
 
         TipoHabitacion tipo = tipoHabitacionRepo.findById(dto.idTipoHabitacion())
-                .orElseThrow(() -> new RecursoNoEncontradoException("TipoHabitacion", dto.idTipoHabitacion()));
+                .orElseThrow(() -> new RecursoNoEncontradoException(RECURSO_HABITACION, dto.idTipoHabitacion()));
 
         Habitacion entidad = new Habitacion();
         entidad.setNumeroHabitacion(dto.numeroHabitacion());
@@ -56,7 +57,7 @@ public class HabitacionServiceImpl implements HabitacionService {
     @Transactional
     public HabitacionResponseDTO actualizarHabitacion(Long id, HabitacionRequestDTO dto) {
         Habitacion existente = habitacionRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(RECURSO_HABITACION, id));
 
         if (!existente.getNumeroHabitacion().equalsIgnoreCase(dto.numeroHabitacion()) &&
                 habitacionRepo.existsByNumeroHabitacion(dto.numeroHabitacion())) {
@@ -67,7 +68,7 @@ public class HabitacionServiceImpl implements HabitacionService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Piso", dto.idPiso()));
 
         TipoHabitacion tipo = tipoHabitacionRepo.findById(dto.idTipoHabitacion())
-                .orElseThrow(() -> new RecursoNoEncontradoException("TipoHabitacion", dto.idTipoHabitacion()));
+                .orElseThrow(() -> new RecursoNoEncontradoException(RECURSO_HABITACION, dto.idTipoHabitacion()));
 
         existente.setNumeroHabitacion(dto.numeroHabitacion());
         existente.setPrecioActual(dto.precioActual());
@@ -82,7 +83,7 @@ public class HabitacionServiceImpl implements HabitacionService {
     @Transactional
     public void darDeBajaHabitacion(Long id) {
         Habitacion existente = habitacionRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(RECURSO_HABITACION, id));
 
         // Borrado lógico: no se elimina de la BD, solo se inactiva
         existente.setEstadoActivo(false);
@@ -94,14 +95,14 @@ public class HabitacionServiceImpl implements HabitacionService {
     public List<HabitacionResponseDTO> listarTodas() {
         return habitacionRepo.findAll().stream()
                 .map(this::mapearADto)
-                .collect(Collectors.toList());
+                .toList(); //
     }
 
     @Override
     @Transactional(readOnly = true)
     public HabitacionResponseDTO buscarPorId(Long id) {
         return mapearADto(habitacionRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", id)));
+                .orElseThrow(() -> new RecursoNoEncontradoException(RECURSO_HABITACION, id)));
     }
 
     @Override
@@ -119,7 +120,7 @@ public class HabitacionServiceImpl implements HabitacionService {
         }
         return habitacionRepo.findByPrecioActualBetween(min, max).stream()
                 .map(this::mapearADto)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
@@ -130,7 +131,7 @@ public class HabitacionServiceImpl implements HabitacionService {
         }
 
         Habitacion hab = habitacionRepo.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", id));
+                .orElseThrow(() -> new RecursoNoEncontradoException(RECURSO_HABITACION, id));
 
         hab.setPrecioActual(nuevoPrecio);
         Habitacion actualizada = habitacionRepo.save(hab);

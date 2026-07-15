@@ -55,4 +55,4 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
      * Requerido por la lógica de negocio en la capa de servicio para evaluar disponibilidad.
      */
     List<Reserva> findByHabitacion_IdHabitacionAndFechaEntradaPlanificadaBetween(Long idHabitacion, LocalDate inicio, LocalDate fin);
-}L
+}

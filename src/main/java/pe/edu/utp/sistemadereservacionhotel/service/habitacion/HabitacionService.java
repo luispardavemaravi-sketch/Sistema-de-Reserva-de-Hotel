@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * Servicio transaccional para la gestión del inventario físico.
- * Aísla la persistencia mediante DTOs y gestiona cambios de estado operativo.
+ * Aísla la persistencia mediante DTO y gestiona cambios de estado operativo.
  */
 public interface HabitacionService {
 

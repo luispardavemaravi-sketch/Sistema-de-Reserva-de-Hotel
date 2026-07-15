@@ -20,7 +20,7 @@ public interface HabitacionRepository extends JpaRepository<Habitacion, Long> {
     Optional<Habitacion> findByNumeroHabitacion(String numeroHabitacion);
 
     /**
-     * Valida la existencia física de una habitación mediante su número.
+     * Válida la existencia física de una habitación mediante su número.
      */
     boolean existsByNumeroHabitacion(String numeroHabitacion);
 
@@ -42,11 +42,11 @@ public interface HabitacionRepository extends JpaRepository<Habitacion, Long> {
     /**
      * Recupera habitaciones que se encuentran en un estado operativo particular.
      */
-    List<Habitacion> findByEstadoHabitacion_IdEstadoHabitacion(Long idEstadoHabitacion);
+    List<Habitacion> findByEstadoHabitacionIdEstado(Long idEstado);
 
     /**
      * Busca habitaciones cuya tarifa base actual se encuentre dentro de un presupuesto.
-     * CAMBIO CRÍTICO: Refactorizado de Double a BigDecimal para evitar el colapso del mapeo JPA.
+     * CAMBIO CRÍTICO: Refactorings de Double a BigDecimal para evitar el colapso del mapeo JPA.
      */
     List<Habitacion> findByPrecioActualBetween(BigDecimal precioMin, BigDecimal precioMax);
 }
