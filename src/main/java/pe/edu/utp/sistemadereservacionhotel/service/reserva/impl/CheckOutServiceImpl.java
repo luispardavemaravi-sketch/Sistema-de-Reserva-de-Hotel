@@ -8,6 +8,7 @@ import pe.edu.utp.sistemadereservacionhotel.repository.reserva.CheckOutRepositor
 import pe.edu.utp.sistemadereservacionhotel.service.reserva.CheckOutService;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,7 +27,7 @@ public class CheckOutServiceImpl implements CheckOutService {
         if (repo.findByReserva_IdReserva(checkOut.getReserva().getIdReserva()).isPresent()) {
             throw new IllegalArgumentException("Ya existe un CheckOut para la reserva: " + checkOut.getReserva().getIdReserva());
         }
-        checkOut.setFechaHoraRealSalida(LocalDateTime.now());
+        checkOut.setFechaHoraRealSalida(LocalDateTime.now(ZoneId.of("America/Lima")));
         return repo.save(checkOut);
     }
 

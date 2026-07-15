@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import pe.edu.utp.sistemadereservacionhotel.config.Auditor;
 
 import java.io.Serializable;
 
@@ -16,7 +17,7 @@ import java.io.Serializable;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Empleado implements Serializable {
+public class Empleado extends Auditor<String> implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id

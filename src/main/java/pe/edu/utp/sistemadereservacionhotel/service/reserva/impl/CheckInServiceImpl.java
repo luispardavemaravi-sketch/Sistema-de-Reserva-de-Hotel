@@ -9,6 +9,7 @@ import pe.edu.utp.sistemadereservacionhotel.repository.reserva.CheckInRepository
 import pe.edu.utp.sistemadereservacionhotel.service.reserva.CheckInService;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +28,7 @@ public class CheckInServiceImpl implements CheckInService {
         if (repo.findByReserva_IdReserva(checkIn.getReserva().getIdReserva()).isPresent()) {
             throw new IllegalArgumentException("Ya existe un CheckIn para la reserva: " + checkIn.getReserva().getIdReserva());
         }
-        checkIn.setFechaHoraRealEntrada(LocalDateTime.now());
+        checkIn.setFechaHoraRealEntrada(LocalDateTime.now(ZoneId.of("America/Lima")));
         return repo.save(checkIn);
     }
 

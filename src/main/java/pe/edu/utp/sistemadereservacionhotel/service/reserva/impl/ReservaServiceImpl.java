@@ -9,6 +9,7 @@ import pe.edu.utp.sistemadereservacionhotel.service.reserva.ReservaServicio;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +28,7 @@ public class ReservaServiceImpl implements ReservaServicio {
         if (repo.existsByCodigoReserva(reserva.getCodigoReserva())) {
             throw new IllegalArgumentException("La reserva ya existe");
         }
-        reserva.setFechaReserva(LocalDateTime.now());
+        reserva.setFechaReserva(LocalDateTime.now(ZoneId.of("America/Lima")));
         return repo.save(reserva);
     }
 

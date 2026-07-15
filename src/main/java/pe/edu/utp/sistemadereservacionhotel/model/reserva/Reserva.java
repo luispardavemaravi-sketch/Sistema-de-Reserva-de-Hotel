@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.*;
+import pe.edu.utp.sistemadereservacionhotel.config.Auditor;
 import pe.edu.utp.sistemadereservacionhotel.model.huesped.Huesped;
 
 import java.io.Serializable;
@@ -17,7 +18,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Reserva implements Serializable {
+public class Reserva extends Auditor<String> implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
@@ -36,7 +37,7 @@ public class Reserva implements Serializable {
     private LocalDate fechaEntradaPlanificada;
 
     @PositiveOrZero(message = "El monto total no puede ser negativo")
-    @Column(nullable = false )
+    @Column(nullable = false)
     private Double montoTotalEstimado;
 
     // Relación N a 1: Muchas reservas pertenecen a un Huésped
