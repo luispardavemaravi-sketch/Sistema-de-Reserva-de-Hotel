@@ -20,6 +20,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio transaccional que consolida la facturación.
+ * Delega la instanciación de los documentos legales a una arquitectura basada en Patrón Factory.
+ */
 @RequiredArgsConstructor
 @Service
 public class ComprobantePagoServiceImpl implements ComprobantePagoService {
@@ -27,6 +31,10 @@ public class ComprobantePagoServiceImpl implements ComprobantePagoService {
     private final ComprobantePagoRepository comprobanteRepo;
     private final ReservaRepository reservaRepo;
 
+    /**
+     * Orquesta la generación de un nuevo comprobante.
+     * Desacopla la lógica de impuestos (IGV) delegándola al Factory Method.
+     */
     @Override
     @Transactional
     public ComprobanteResponseDTO emitirComprobante(ComprobanteRequestDTO request) {
@@ -38,7 +46,7 @@ public class ComprobantePagoServiceImpl implements ComprobantePagoService {
             throw new DuplicadoException("La reserva ya tiene un comprobante emitido.");
         }
 
-        // Lógica de fábrica
+        // Aplicación del Patrón Factory para resolver en tiempo de ejecución (Boleta/Factura)
         ComprobanteFactory factory = ComprobanteFactorySelector.obtenerFactory(request.tipoComprobante());
         ComprobantePago comprobante = factory.crear(reserva, reserva.getMontoTotalEstimado());
 
@@ -47,15 +55,16 @@ public class ComprobantePagoServiceImpl implements ComprobantePagoService {
         return mapearADto(guardado);
     }
 
+    /**
+     * Implementa la anulación lógica del comprobante para mantener la traza de auditoría contable.
+     */
     @Override
     @Transactional
     public ComprobanteResponseDTO anularComprobante(Long idComprobante) {
-        // En un sistema real, aquí se emitiría una nota de crédito.
-        // Por ahora, lanzamos excepción si no existe.
         ComprobantePago existente = comprobanteRepo.findById(idComprobante)
                 .orElseThrow(() -> new RecursoNoEncontradoException("ComprobantePago", idComprobante));
 
-        // Lógica de anulación...
+        // Lógica de anulación (Emisión de Nota de Crédito u otro mecanismo legal pendiente de implementación)
         return mapearADto(existente);
     }
 

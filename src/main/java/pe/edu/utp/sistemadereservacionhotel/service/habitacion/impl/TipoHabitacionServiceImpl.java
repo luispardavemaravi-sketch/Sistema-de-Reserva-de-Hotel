@@ -3,107 +3,100 @@ package pe.edu.utp.sistemadereservacionhotel.service.habitacion.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.TipoHabitacionDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.habitacion.TipoHabitacion;
 import pe.edu.utp.sistemadereservacionhotel.repository.habitacion.TipoHabitacionRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.habitacion.TipoHabitacionService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.DuplicadoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
-
+/**
+ * Servicio paramétrico responsable del catálogo de categorías comerciales del hotel (ej. Suite, Doble, Presidencial).
+ * Define las restricciones base como el aforo máximo y el precio piso para el motor de reservas.
+ */
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class TipoHabitacionServiceImpl implements TipoHabitacionService {
+
     private final TipoHabitacionRepository repo;
 
-
+    /**
+     * Fija un nuevo nivel de clasificación en el portafolio del hotel.
+     */
     @Override
-    public TipoHabitacion save(TipoHabitacion tipoHabitacion) {
-        if (tipoHabitacion.getIdTipo() != null) {
-            throw new IllegalArgumentException("Para actualizar use el método update");
+    @Transactional
+    public TipoHabitacionDTO registrarTipo(TipoHabitacionDTO dto) {
+        if (repo.existsByNombre(dto.nombre())) {
+            throw new DuplicadoException("Ya existe un tipo con el nombre: " + dto.nombre());
         }
-        if (repo.existsByNombre(tipoHabitacion.getNombre())) {
-            throw new IllegalArgumentException("Ya existe un tipo con el nombre: " + tipoHabitacion.getNombre());
-        }
-        return repo.save(tipoHabitacion);
+
+        TipoHabitacion entidad = new TipoHabitacion();
+        entidad.setNombre(dto.nombre());
+        entidad.setCapacidadMaxima(dto.capacidadMaxima());
+        entidad.setPrecioBase(dto.precioBase());
+
+        return mapearADto(repo.save(entidad));
     }
 
+    /**
+     * Ajusta la estructura de una categoría, implementando bloqueos Fail-Fast
+     * para evitar superposición de nomenclaturas comerciales.
+     */
     @Override
-    public TipoHabitacion update(TipoHabitacion tipoHabitacion) {
-        if (tipoHabitacion.getIdTipo() == null) {
-            throw new IllegalArgumentException("El ID no puede ser nulo para actualizar");
+    @Transactional
+    public TipoHabitacionDTO actualizarTipo(Long id, TipoHabitacionDTO dto) {
+        TipoHabitacion existente = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("TipoHabitacion", id));
+
+        if (!existente.getNombre().equalsIgnoreCase(dto.nombre()) &&
+                repo.existsByNombre(dto.nombre())) {
+            throw new DuplicadoException("Ya existe otro tipo de habitación con ese nombre.");
         }
-        TipoHabitacion existente = repo.findById(tipoHabitacion.getIdTipo())
-                .orElseThrow(() -> new RuntimeException("Tipo no encontrado con ID: " + tipoHabitacion.getIdTipo()));
 
-        existente.setNombre(tipoHabitacion.getNombre());
-        existente.setCapacidadMaxima(tipoHabitacion.getCapacidadMaxima());
-        existente.setPrecioBase(tipoHabitacion.getPrecioBase());
+        existente.setNombre(dto.nombre());
+        existente.setCapacidadMaxima(dto.capacidadMaxima());
+        existente.setPrecioBase(dto.precioBase());
 
-        return repo.save(existente);
-    }
-
-    @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id)) {
-            throw new RuntimeException("Tipo de habitación no encontrado con ID: " + id);
-        }
-        repo.deleteById(id);
+        return mapearADto(repo.save(existente));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<TipoHabitacion> findAll() {
-        return repo.findAll();
+    public List<TipoHabitacionDTO> listarTodos() {
+        return repo.findAll().stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<TipoHabitacion> findById(Long id) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("El ID debe ser un número positivo");
+    public TipoHabitacionDTO buscarPorId(Long id) {
+        return mapearADto(repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("TipoHabitacion", id)));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TipoHabitacionDTO> buscarPorRangoPrecio(BigDecimal precioMin, BigDecimal precioMax) {
+        if (precioMin.compareTo(precioMax) > 0) {
+            throw new ValidacionException("El precio mínimo no puede ser mayor al precio máximo");
         }
-        return repo.findById(id);
+        return repo.findByPrecioBaseBetween(precioMin, precioMax).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<TipoHabitacion> findByNombre(String nombre) {
-        if (nombre == null || nombre.isBlank()) {
-            throw new IllegalArgumentException("El nombre no puede estar vacío");
-        }
-        return repo.findByNombre(nombre.trim());
+    private TipoHabitacionDTO mapearADto(TipoHabitacion entidad) {
+        return new TipoHabitacionDTO(
+                entidad.getIdTipo(),
+                entidad.getNombre(),
+                entidad.getCapacidadMaxima(),
+                entidad.getPrecioBase()
+        );
     }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TipoHabitacion> findByCapacidadMinima(Integer capacidad) {
-        if (capacidad == null || capacidad <= 0) {
-            throw new IllegalArgumentException("La capacidad debe ser mayor a cero");
-        }
-        return repo.findByCapacidadMaximaGreaterThanEqual(capacidad);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TipoHabitacion> findByRangoPrecio(Double precioMin, Double precioMax) {
-        if (precioMin > precioMax) {
-            throw new IllegalArgumentException("El precio mínimo no puede ser mayor al precio máximo");
-        }
-        return repo.findByPrecioBaseBetween(precioMin, precioMax);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByNombre(String nombre) {
-        return repo.existsByNombre(nombre.trim());
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
-    }
-
 }

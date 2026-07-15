@@ -111,4 +111,19 @@ public class Empleado extends Auditor<String> implements Serializable {
     @NotBlank(message = "La ciudad no puede estar vacía.")
     @Column(nullable = false, length = 100)
     private String ciudad;
+
+
+    /**
+     * Bandera de borrado lógico para cumplir con auditorías y normativas de datos (RGPD).
+     */
+    @NotNull(message = "El estado activo es obligatorio")
+    @Column(nullable = false)
+    private Boolean estadoActivo = true;
+
+    /**
+     * Relación con la malla horaria. Un empleado debe tener un turno asignado.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_turno", nullable = false)
+    private Turno turno;
 }

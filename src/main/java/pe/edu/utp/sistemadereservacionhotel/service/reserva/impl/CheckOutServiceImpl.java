@@ -3,97 +3,114 @@ package pe.edu.utp.sistemadereservacionhotel.service.reserva.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.CheckOutRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.CheckOutResponseDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.reserva.CheckOut;
+import pe.edu.utp.sistemadereservacionhotel.model.reserva.Reserva;
 import pe.edu.utp.sistemadereservacionhotel.repository.reserva.CheckOutRepository;
+import pe.edu.utp.sistemadereservacionhotel.repository.reserva.ReservaRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.reserva.CheckOutService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.DuplicadoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * Implementación transaccional para la gestión de salidas del hotel y auditoría de multas.
+ */
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class CheckOutServiceImpl implements CheckOutService {
 
     private final CheckOutRepository repo;
+    private final ReservaRepository reservaRepo;
+    private static final String ENTIDAD = "CheckOut";
 
     @Override
-    public CheckOut save(CheckOut checkOut) {
-        if (checkOut.getIdCheckOut() != null) {
-            throw new IllegalArgumentException("Para actualizar use el método update");
+    @Transactional
+    public CheckOutResponseDTO realizarCheckOut(CheckOutRequestDTO dto) {
+        Reserva reserva = reservaRepo.findById(dto.idReserva())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Reserva", dto.idReserva()));
+
+        if (repo.findByReserva_IdReserva(reserva.getIdReserva()).isPresent()) {
+            throw new DuplicadoException("Ya existe un registro de CheckOut para la reserva: " + reserva.getIdReserva());
         }
-        if (repo.findByReserva_IdReserva(checkOut.getReserva().getIdReserva()).isPresent()) {
-            throw new IllegalArgumentException("Ya existe un CheckOut para la reserva: " + checkOut.getReserva().getIdReserva());
-        }
-        checkOut.setFechaHoraRealSalida(LocalDateTime.now(ZoneId.of("America/Lima")));
-        return repo.save(checkOut);
+
+        CheckOut entidad = new CheckOut();
+        entidad.setReserva(reserva);
+        entidad.setFechaHoraRealSalida(LocalDateTime.now(ZoneId.of("America/Lima")));
+        entidad.setMultaPorRetraso(dto.multa()); // BigDecimal, no Double
+
+        return mapearADto(repo.save(entidad));
     }
 
     @Override
-    public CheckOut update(CheckOut checkOut) {
-        if (checkOut.getIdCheckOut() == null) {
-            throw new IllegalArgumentException("El ID no puede ser nulo para actualizar");
-        }
-        CheckOut existente = repo.findById(checkOut.getIdCheckOut())
-                .orElseThrow(() -> new RuntimeException("CheckOut no encontrado con ID: " + checkOut.getIdCheckOut()));
+    @Transactional
+    public CheckOutResponseDTO actualizarCheckOut(Long id, CheckOutRequestDTO dto) {
+        CheckOut existente = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
 
-        existente.setMultaPorRetraso(checkOut.getMultaPorRetraso());
+        existente.setMultaPorRetraso(dto.multa());
 
-        return repo.save(existente);
-    }
-
-    @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id)) {
-            throw new RuntimeException("CheckOut no encontrado con ID: " + id);
-        }
-        repo.deleteById(id);
+        return mapearADto(repo.save(existente));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CheckOut> findAll() {
-        return repo.findAll();
+    public List<CheckOutResponseDTO> listarTodos() {
+        return repo.findAll().stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<CheckOut> findById(Long id) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("El ID debe ser un número positivo");
-        }
-        return repo.findById(id);
+    public CheckOutResponseDTO buscarPorId(Long id) {
+        return mapearADto(repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<CheckOut> findByReserva(Long idReserva) {
-        return repo.findByReserva_IdReserva(idReserva);
+    public CheckOutResponseDTO buscarPorReserva(Long idReserva) {
+        return mapearADto(repo.findByReserva_IdReserva(idReserva)
+                .orElseThrow(() -> new RecursoNoEncontradoException("CheckOut de Reserva", idReserva)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CheckOut> findByRangoFecha(LocalDateTime inicio, LocalDateTime fin) {
+    public List<CheckOutResponseDTO> buscarPorRangoFecha(LocalDateTime inicio, LocalDateTime fin) {
         if (inicio.isAfter(fin)) {
-            throw new IllegalArgumentException("La fecha inicio no puede ser posterior a la fecha fin");
+            throw new ValidacionException("La fecha inicio no puede ser posterior a la fecha fin");
         }
-        return repo.findByFechaHoraRealSalidaBetween(inicio, fin);
+        return repo.findByFechaHoraRealSalidaBetween(inicio, fin).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<CheckOut> findConMulta(Double montoMinimo) {
-        if (montoMinimo < 0) {
-            throw new IllegalArgumentException("El monto mínimo no puede ser negativo");
+    public List<CheckOutResponseDTO> buscarConMulta(BigDecimal montoMinimo) {
+        if (montoMinimo == null || montoMinimo.signum() < 0) {
+            throw new ValidacionException("El monto mínimo no puede ser negativo");
         }
-        return repo.findByMultaPorRetrasoGreaterThan(montoMinimo);
+        return repo.findByMultaPorRetrasoGreaterThan(montoMinimo).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    private CheckOutResponseDTO mapearADto(CheckOut entidad) {
+        return new CheckOutResponseDTO(
+                entidad.getIdCheckOut(),
+                entidad.getReserva().getIdReserva(),
+                entidad.getFechaHoraRealSalida(),
+                entidad.getMultaPorRetraso(),
+                entidad.getObservaciones()
+        );
     }
 }

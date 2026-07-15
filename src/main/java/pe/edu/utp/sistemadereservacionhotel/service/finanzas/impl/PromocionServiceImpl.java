@@ -16,12 +16,18 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio encargado de orquestar la habilitación y control temporal de campañas (cupones).
+ */
 @RequiredArgsConstructor
 @Service
 public class PromocionServiceImpl implements PromocionService {
 
     private final PromocionRepository repo;
 
+    /**
+     * Da de alta un cupón promocional, aplicando validaciones preventivas sobre las fechas de caducidad.
+     */
     @Override
     @Transactional
     public PromocionDTO registrarPromocion(PromocionDTO dto) {
@@ -34,7 +40,7 @@ public class PromocionServiceImpl implements PromocionService {
 
         Promocion entidad = new Promocion();
         entidad.setCodigoCupon(dto.codigoCupon().toUpperCase());
-        entidad.setPorcentajeDescuento(dto.porcentajeDescuento()); // Ya es BigDecimal
+        entidad.setPorcentajeDescuento(dto.porcentajeDescuento());
         entidad.setFechaCaducidad(dto.fechaCaducidad());
 
         return mapearADto(repo.save(entidad));

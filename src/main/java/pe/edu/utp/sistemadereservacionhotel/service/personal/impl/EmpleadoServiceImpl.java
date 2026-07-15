@@ -1,149 +1,187 @@
 package pe.edu.utp.sistemadereservacionhotel.service.personal.impl;
 
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.EmpleadoRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.EmpleadoResponseDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.personal.Empleado;
+import pe.edu.utp.sistemadereservacionhotel.model.personal.Turno;
+import pe.edu.utp.sistemadereservacionhotel.model.personal.CargoEmpleado;
 import pe.edu.utp.sistemadereservacionhotel.repository.personal.EmpleadoRepository;
+import pe.edu.utp.sistemadereservacionhotel.repository.personal.TurnoRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.personal.EmpleadoService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.DuplicadoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * Implementación núcleo de la lógica de recursos humanos.
+ * Centraliza validaciones de integridad referencial y normativas de borrado lógico.
+ */
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class EmpleadoServiceImpl implements EmpleadoService {
 
-    private final EmpleadoRepository repo;
+    private final EmpleadoRepository empleadoRepo;
+    private final TurnoRepository turnoRepo;
 
-    //Guardar empleados
+    private static final String ENTIDAD_NOMBRE = "Empleado";
+
     @Override
-    public Empleado save(Empleado empleado) {
+    @Transactional
+    public EmpleadoResponseDTO registrarEmpleado(EmpleadoRequestDTO dto) {
+        String emailProcesado = dto.email().trim().toLowerCase();
 
-        if (empleado == null) {
-            throw new IllegalArgumentException(
-                    "El empleado no puede ser nulo"
-            );
+        if (empleadoRepo.existsByEmail(emailProcesado)) {
+            throw new DuplicadoException("El correo electrónico corporativo ya se encuentra asignado.");
         }
 
-        if (repo.existsByEmail(empleado.getEmail())) {
-            throw new IllegalArgumentException(
-                    "El empleado ya existe"
-            );
-        }
+        Turno turnoAsignado = turnoRepo.findById(dto.idTurno())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Turno", dto.idTurno()));
 
-        return repo.save(empleado);
-    }
+        Empleado entidad = new Empleado();
+        entidad.setEmail(emailProcesado);
+        entidad.setEstadoActivo(true);
 
-    //Actualizar empleados
-    @Override
-    public Empleado update(Empleado empleado) {
-        if (empleado.getIdEmpleado() == null) {
-            throw new IllegalArgumentException("El id no puede ser nulo para actualizar");
-        }
-        // 1. Buscar el empleado existente en DB
-        Empleado empleadoExistente = repo.findById(empleado.getIdEmpleado()).orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + empleado.getIdEmpleado()));
+        // Uso del método de extracción para evitar código duplicado (SonarLint Fix)
+        mapearDatosComunes(entidad, dto, turnoAsignado);
 
-        // 2. Actualizar solo los campos que llegaron
-        empleadoExistente.setNombre(empleado.getNombre());
-        empleadoExistente.setApellido(empleado.getApellido());
-        empleadoExistente.setTelefono(empleado.getTelefono());
-        empleadoExistente.setCargo(empleado.getCargo());
-        empleadoExistente.setEspecialidad(empleado.getEspecialidad());
-        empleadoExistente.setDireccion(empleado.getDireccion());
-        empleadoExistente.setCiudad(empleado.getCiudad());
-
-        // 3. Guardar y retornar
-        return repo.save(empleadoExistente);
+        return mapearADto(empleadoRepo.save(entidad));
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id)) {
-            throw new IllegalArgumentException("El empleado no existe");
+    @Transactional
+    public EmpleadoResponseDTO actualizarEmpleado(Long id, EmpleadoRequestDTO dto) {
+        Empleado existente = empleadoRepo.findById(id)
+                // CORRECCIÓN: Variable sin comillas
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD_NOMBRE, id));
+
+        String emailProcesado = dto.email().trim().toLowerCase();
+        if (!existente.getEmail().equals(emailProcesado) && empleadoRepo.existsByEmail(emailProcesado)) {
+            throw new DuplicadoException("El nuevo correo electrónico ya está en uso por otro empleado.");
         }
-        repo.deleteById(id);
+
+        Turno turnoAsignado = turnoRepo.findById(dto.idTurno())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Turno", dto.idTurno()));
+
+        existente.setEmail(emailProcesado);
+
+        // Uso del método de extracción para evitar código duplicado (SonarLint Fix)
+        mapearDatosComunes(existente, dto, turnoAsignado);
+
+        return mapearADto(empleadoRepo.save(existente));
     }
 
-
     @Override
-    @Transactional(readOnly = true)
-    public List<Empleado> findAll() {
-        return repo.findAll();
-    }
+    @Transactional
+    public void darDeBajaEmpleado(Long id) {
+        Empleado existente = empleadoRepo.findById(id)
+                // CORRECCIÓN: Variable sin comillas
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD_NOMBRE, id));
 
-
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Empleado> findById(Long id) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("El id debe ser positivo");
+        if (!existente.getEstadoActivo()) {
+            throw new ValidacionException("El empleado ya se encuentra inactivo.");
         }
-        return repo.findById(id);
+
+        existente.setEstadoActivo(false);
+        empleadoRepo.save(existente);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Empleado> findByEmail(String email) {
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("El email no puede estar vacio");
-        }
-        return repo.findByEmail(email.trim().toLowerCase());
+    public List<EmpleadoResponseDTO> listarActivos() {
+        return empleadoRepo.findByEstadoActivoTrue().stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Empleado> findByNombre(String nombre) {
-        if (nombre == null || nombre.isBlank()) {
-            throw new IllegalArgumentException("El nombre no puede estar vacio");
-
-        }
-        return repo.findByNombreContainingIgnoreCase(nombre.trim());
+    public EmpleadoResponseDTO buscarPorId(Long id) {
+        Empleado empleado = empleadoRepo.findById(id)
+                // CORRECCIÓN: Variable sin comillas
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD_NOMBRE, id));
+        return mapearADto(empleado);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Empleado> findByApellido(String apellido) {
-        if (apellido == null || apellido.isBlank()) {
-            throw new IllegalArgumentException("El apellido no puede estar vacio");
-
-        }
-        return repo.findByApellidoContainingIgnoreCase(apellido.trim());
+    public EmpleadoResponseDTO buscarPorEmail(String email) {
+        Empleado empleado = empleadoRepo.findByEmailAndEstadoActivoTrue(email.trim().toLowerCase())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Empleado no encontrado con el correo provisto."));
+        return mapearADto(empleado);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Empleado> findByCargo(String cargo) {
-        if (cargo == null || cargo.isBlank()) {
-            throw new IllegalArgumentException("El cargo no puede estar vacio");
-        }
-        return repo.findByCargoContainingIgnoreCase(cargo.trim());
+    public List<EmpleadoResponseDTO> buscarPorNombre(String nombre) {
+        return empleadoRepo.findByNombreContainingIgnoreCaseAndEstadoActivoTrue(nombre.trim()).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Empleado> findByCiudad(String ciudad) {
-        if (ciudad == null || ciudad.isBlank()) {
-            throw new IllegalArgumentException("La ciudad no puede estar vacia");
-        }
-        return repo.findByCiudadContainingIgnoreCase(ciudad.trim());
+    public List<EmpleadoResponseDTO> buscarPorApellido(String apellido) {
+        return empleadoRepo.findByApellidoContainingIgnoreCaseAndEstadoActivoTrue(apellido.trim()).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public boolean existsByEmail(String email) {
-        if (email == null || email.isBlank()) {
-            throw new IllegalArgumentException("El email no puede estar vacio");
+    public List<EmpleadoResponseDTO> buscarPorCargo(CargoEmpleado cargo) {
+        if (cargo == null) {
+            throw new ValidacionException("El cargo es obligatorio para realizar la búsqueda.");
         }
-
-        return repo.existsByEmail(email.trim());
+        return empleadoRepo.findByCargoAndEstadoActivoTrue(cargo).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    public List<EmpleadoResponseDTO> buscarPorCiudad(String ciudad) {
+        return empleadoRepo.findByCiudadContainingIgnoreCaseAndEstadoActivoTrue(ciudad.trim()).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Extrae el código duplicado de asignación de atributos para cumplir con el principio DRY.
+     */
+    private void mapearDatosComunes(Empleado entidad, EmpleadoRequestDTO dto, Turno turnoAsignado) {
+        entidad.setNombre(dto.nombre().trim());
+        entidad.setApellido(dto.apellido().trim());
+        entidad.setTelefono(dto.telefono().trim());
+        entidad.setCargo(dto.cargo());
+        entidad.setEspecialidad(dto.especialidad());
+        entidad.setDireccion(dto.direccion().trim());
+        entidad.setCiudad(dto.ciudad().trim());
+        entidad.setTurno(turnoAsignado);
+    }
+
+    /**
+     * Mapeado de transferencia de datos.
+     * Convierte la entidad administrada por JPA en un registro inmutable.
+     */
+    private EmpleadoResponseDTO mapearADto(Empleado entidad) {
+        return new EmpleadoResponseDTO(
+                entidad.getIdEmpleado(),
+                entidad.getNombre(),
+                entidad.getApellido(),
+                entidad.getEmail(),
+                entidad.getTelefono(),
+                entidad.getCargo(),
+                entidad.getEspecialidad(),
+                entidad.getDireccion(),
+                entidad.getCiudad(),
+                entidad.getTurno() != null ? entidad.getTurno().getIdTurno() : null,
+                entidad.getEstadoActivo()
+        );
     }
 }

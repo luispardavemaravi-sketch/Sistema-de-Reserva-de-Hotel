@@ -1,28 +1,35 @@
 package pe.edu.utp.sistemadereservacionhotel.service.reserva;
 
-import pe.edu.utp.sistemadereservacionhotel.model.reserva.CheckOut;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.CheckOutRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.CheckOutResponseDTO;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Contrato de negocio para la liberación de la habitación y auditoría de salida.
+ */
 public interface CheckOutService {
 
-    CheckOut save(CheckOut checkOut);
+    /**
+     * Formaliza la salida del huésped.
+     * Debe calcular automáticamente las penalidades si la salida es posterior a la hora límite (Late Check-out).
+     */
+    CheckOutResponseDTO realizarCheckOut(CheckOutRequestDTO dto);
 
-    CheckOut update(CheckOut checkOut);
+    CheckOutResponseDTO actualizarCheckOut(Long id, CheckOutRequestDTO dto);
 
-    void delete(Long id);
+    List<CheckOutResponseDTO> listarTodos();
 
-    List<CheckOut> findAll();
+    CheckOutResponseDTO buscarPorId(Long id);
 
-    Optional<CheckOut> findById(Long id);
+    CheckOutResponseDTO buscarPorReserva(Long idReserva);
 
-    Optional<CheckOut> findByReserva(Long idReserva);
+    List<CheckOutResponseDTO> buscarPorRangoFecha(LocalDateTime inicio, LocalDateTime fin);
 
-    List<CheckOut> findByRangoFecha(LocalDateTime inicio, LocalDateTime fin);
-
-    List<CheckOut> findConMulta(Double montoMinimo);
-
-    long count();
+    /**
+     * Búsqueda financiera de salidas penalizadas utilizando alta precisión contable.
+     */
+    List<CheckOutResponseDTO> buscarConMulta(BigDecimal montoMinimo);
 }

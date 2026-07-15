@@ -1,5 +1,12 @@
 package pe.edu.utp.sistemadereservacionhotel.service.patron.singleton;
 
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.stereotype.Component;
+
+@Getter
+@Setter
+@Component
 public class ConfiguracionHotel {
     private static volatile ConfiguracionHotel instance;
 
@@ -34,10 +41,5 @@ public class ConfiguracionHotel {
     public int getHoraCheckIn() { return horaCheckIn; }
     public int getHoraCheckOut() { return horaCheckOut; }
 
-    public void setPorcentajeImpuesto(double porcentajeImpuesto) {
-        this.porcentajeImpuesto = porcentajeImpuesto;
-    }
-    public void setNombreHotel(String nombreHotel) {
-        this.nombreHotel = nombreHotel;
-    }
+
 }

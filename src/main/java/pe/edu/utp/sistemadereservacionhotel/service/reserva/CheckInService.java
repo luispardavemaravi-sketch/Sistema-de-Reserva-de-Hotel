@@ -1,26 +1,32 @@
 package pe.edu.utp.sistemadereservacionhotel.service.reserva;
 
-import pe.edu.utp.sistemadereservacionhotel.model.reserva.CheckIn;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.CheckInRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.CheckInResponseDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Contrato de negocio para formalizar la ocupación física de la habitación.
+ */
 public interface CheckInService {
 
-    CheckIn save(CheckIn checkIn);
+    /**
+     * Formaliza la entrada del huésped.
+     * Nota: En la implementación, este método debe cambiar el estado de la Reserva y la Habitación.
+     */
+    CheckInResponseDTO realizarCheckIn(CheckInRequestDTO dto);
 
-    CheckIn update(CheckIn checkIn);
+    /**
+     * Modifica datos del registro de entrada (ej. corrección de hora por error de sistema).
+     */
+    CheckInResponseDTO actualizarCheckIn(Long id, CheckInRequestDTO dto);
 
-    void delete(Long id);
+    List<CheckInResponseDTO> listarTodos();
 
-    List<CheckIn> findAll();
+    CheckInResponseDTO buscarPorId(Long id);
 
-    Optional<CheckIn> findById(Long id);
+    CheckInResponseDTO buscarPorReserva(Long idReserva);
 
-    Optional<CheckIn> findByReserva(Long idReserva);
-
-    List<CheckIn> findByRangoFecha(LocalDateTime inicio, LocalDateTime fin);
-
-    long count();
+    List<CheckInResponseDTO> buscarPorRangoFecha(LocalDateTime inicio, LocalDateTime fin);
 }

@@ -2,6 +2,7 @@ package pe.edu.utp.sistemadereservacionhotel.model.habitacion;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 /**
  * Entidad de catálogo que define los recursos, comodidades o mobiliario adicional
@@ -46,7 +48,9 @@ public class Equipamiento implements Serializable {
      * Inicializado en 0.0 a nivel de instancia para evitar valores nulos.
      * Restringido a valores positivos o cero para prevenir inconsistencias en la facturación.
      */
+    @NotNull(message = "El costo adicional no puede ser nulo")
     @PositiveOrZero(message = "El costo adicional no puede ser negativo")
-    @Column(nullable = false)
-    private Double costoAdicional = 0.0;  // valor por defecto 0
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal costoAdicional;
+
 }

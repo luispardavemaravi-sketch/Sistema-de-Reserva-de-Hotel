@@ -3,6 +3,7 @@ package pe.edu.utp.sistemadereservacionhotel.model.huesped;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -81,8 +82,9 @@ public class Huesped implements Serializable {
      * Obligatorio para cumplir con normativas de retención de datos donde
      * no se puede realizar un borrado físico en base de datos.
      */
+    @NotNull(message = "El estado activo es obligatorio")
     @Column(nullable = false)
-    private boolean estadoActivo = true;
+    private Boolean estadoActivo = true;
 
     /**
      * Colección del registro histórico de reservas generadas por este huésped.

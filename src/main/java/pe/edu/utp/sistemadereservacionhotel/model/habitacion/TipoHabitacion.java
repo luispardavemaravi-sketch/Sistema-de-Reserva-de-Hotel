@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 /**
  * Entidad paramétrica que define las categorías globales de las habitaciones del hotel.
@@ -62,5 +63,5 @@ public class TipoHabitacion implements Serializable {
      */
     @PositiveOrZero(message = "El precio base no puede estar vacio.")
     @Column(nullable = false)
-    private Double precioBase;
+    private BigDecimal precioBase;
 }

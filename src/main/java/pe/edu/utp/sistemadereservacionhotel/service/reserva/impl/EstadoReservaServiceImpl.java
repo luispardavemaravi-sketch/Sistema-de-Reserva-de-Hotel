@@ -3,95 +3,96 @@ package pe.edu.utp.sistemadereservacionhotel.service.reserva.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.EstadoReservaDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.reserva.EstadoReserva;
 import pe.edu.utp.sistemadereservacionhotel.repository.reserva.EstadoReservaRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.reserva.EstadoReservaService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.DuplicadoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * Servicio encargado de gestionar los estados del ciclo de vida de las reservas.
+ * Implementa el patrón de aislamiento de capa mediante DTO.
+ */
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class EstadoReservaServiceImpl implements EstadoReservaService {
 
     private final EstadoReservaRepository repo;
+    private static final String ENTIDAD = "Estado de Reserva";
 
     @Override
-    public EstadoReserva save(EstadoReserva estadoReserva) {
-        if (estadoReserva.getIdEstado() != null) {
-            throw new IllegalArgumentException("Para actualizar use el método update");
+    @Transactional
+    public EstadoReservaDTO registrarEstado(EstadoReservaDTO dto) {
+        if (repo.existsByNombreEstado(dto.nombreEstado())) {
+            throw new DuplicadoException("Ya existe un estado con el nombre: " + dto.nombreEstado());
         }
-        if (repo.existsByNombreEstado(estadoReserva.getNombreEstado())) {
-            throw new IllegalArgumentException("Ya existe un estado con el nombre: " + estadoReserva.getNombreEstado());
-        }
-        return repo.save(estadoReserva);
+        EstadoReserva entidad = new EstadoReserva();
+        entidad.setNombreEstado(dto.nombreEstado().trim());
+        entidad.setEsModificable(dto.esModificable());
+
+        return mapearADto(repo.save(entidad));
     }
 
     @Override
-    public EstadoReserva update(EstadoReserva estadoReserva) {
-        if (estadoReserva.getIdEstado() == null) {
-            throw new IllegalArgumentException("El ID no puede ser nulo para actualizar");
-        }
-        EstadoReserva existente = repo.findById(estadoReserva.getIdEstado())
-                .orElseThrow(() -> new RuntimeException("Estado no encontrado con ID: " + estadoReserva.getIdEstado()));
+    @Transactional
+    public EstadoReservaDTO actualizarEstado(Long id, EstadoReservaDTO dto) {
+        EstadoReserva existente = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
 
-        existente.setNombreEstado(estadoReserva.getNombreEstado());
-        existente.setEsModificable(estadoReserva.getEsModificable());
+        existente.setNombreEstado(dto.nombreEstado().trim());
+        existente.setEsModificable(dto.esModificable());
 
-        return repo.save(existente);
+        return mapearADto(repo.save(existente));
     }
 
     @Override
-    public void delete(Long id) {
+    @Transactional
+    public void eliminarEstado(Long id) {
         if (!repo.existsById(id)) {
-            throw new RuntimeException("Estado no encontrado con ID: " + id);
+            throw new RecursoNoEncontradoException(ENTIDAD, id);
         }
         repo.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<EstadoReserva> findAll() {
-        return repo.findAll();
+    public List<EstadoReservaDTO> listarTodos() {
+        return repo.findAll().stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<EstadoReserva> findById(Long id) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("El ID debe ser un número positivo");
-        }
-        return repo.findById(id);
+    public EstadoReservaDTO buscarPorId(Long id) {
+        return mapearADto(repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<EstadoReserva> findByNombreEstado(String nombreEstado) {
-        if (nombreEstado == null || nombreEstado.isBlank()) {
-            throw new IllegalArgumentException("El nombre del estado no puede estar vacío");
-        }
-        return repo.findByNombreEstado(nombreEstado.trim());
+    public EstadoReservaDTO buscarPorNombre(String nombreEstado) {
+        return mapearADto(repo.findByNombreEstado(nombreEstado.trim())
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD + " con nombre: " + nombreEstado, 0L)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<EstadoReserva> findByEsModificable(Boolean esModificable) {
+    public List<EstadoReservaDTO> buscarPorEsModificable(Boolean esModificable) {
         if (esModificable == null) {
-            throw new IllegalArgumentException("El parámetro esModificable no puede ser nulo");
+            throw new ValidacionException("El parámetro esModificable es obligatorio");
         }
-        return repo.findByEsModificable(esModificable);
+        return repo.findByEsModificable(esModificable).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public boolean existsByNombreEstado(String nombreEstado) {
-        return repo.existsByNombreEstado(nombreEstado);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    private EstadoReservaDTO mapearADto(EstadoReserva e) {
+        return new EstadoReservaDTO(e.getIdEstado(), e.getNombreEstado(), e.getEsModificable());
     }
 }

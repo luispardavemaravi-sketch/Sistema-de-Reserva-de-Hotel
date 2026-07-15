@@ -1,7 +1,9 @@
 package pe.edu.utp.sistemadereservacionhotel.service.patron.singleton;
 
 public class UtilSingleton {
-
+    private UtilSingleton() {
+        throw new UnsupportedOperationException("Clase de utilidad");
+    }
     public static double calcularImpuesto(double monto) {
         ConfiguracionHotel config = ConfiguracionHotel.getInstance();
         return monto * config.getPorcentajeImpuesto();

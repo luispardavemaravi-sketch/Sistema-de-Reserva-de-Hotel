@@ -11,9 +11,10 @@ import lombok.Setter;
 import java.io.Serializable;
 
 /**
- * Entidad que registra a los individuos adicionales asociados a una reserva principal.
- * Permite mantener un control de identidad y aforo por habitación para fines de
- * seguridad y cumplimiento normativo del hotel.
+ * Entidad de dominio que representa a los individuos adicionales (acompañantes)
+ * vinculados a una reserva principal de alojamiento.
+ * * Esta entidad permite mantener un registro de aforo por habitación, crucial para
+ * fines de seguridad, cumplimiento normativo y control estadístico del hotel.
  */
 @Entity
 @Table(name = "acompanante")
@@ -22,38 +23,41 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Acompanante implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
     /**
-     * Identificador único del acompañante a nivel de base de datos.
-     * Clave primaria gestionada automáticamente por la estrategia de identidad.
+     * Identificador único del acompañante.
+     * Clave primaria autoincremental gestionada por la base de datos.
      */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long idAcompanante;
 
     /**
-     * Nombre(s) y apellidos del acompañante consolidados en un solo campo.
-     * Restricción obligatoria, limitada a 150 caracteres en esquema DDL.
-     * Nota técnica de diseño: La falta de normalización hacia una entidad central de
-     * personas provocará redundancia de datos si el visitante es recurrente.
+     * Nombre(s) del acompañante.
      */
-    @NotBlank(message = "El nombre completo es obligatorio")
-    @Column(nullable = false, length = 150)
+    @NotBlank(message = "El nombre es obligatorio")
+    @Column(nullable = false, length = 100)
     private String nombreCompleto;
 
     /**
-     * Número de documento oficial de identidad (DNI, Pasaporte, NIE).
-     * Restricción obligatoria, limitada a 20 caracteres.
+     * Apellidos del acompañante.
+     */
+    @NotBlank(message = "El apellido es obligatorio")
+    @Column(nullable = false, length = 100)
+    private String apellidos;
+
+    /**
+     * Documento nacional de identidad, pasaporte o NIE.
      */
     @NotBlank(message = "El documento de identidad es obligatorio")
     @Column(nullable = false, length = 20)
     private String documentoIdentidad;
 
     /**
-     * Relación o vínculo familiar/social con el titular de la reserva.
-     * Refactorizado a Enum para garantizar la integridad referencial y evitar
-     * inconsistencias de texto libre.
+     * Vínculo relacional con el titular de la reserva.
+     * Persistido como cadena de texto (String) mediante EnumType.STRING.
      */
     @NotNull(message = "El parentesco es obligatorio")
     @Enumerated(EnumType.STRING)
@@ -61,10 +65,10 @@ public class Acompanante implements Serializable {
     private Parentesco parentesco;
 
     /**
-     * Referencia a la reserva principal a la cual está vinculado este acompañante.
-     * Relación de cardinalidad muchos a uno; una reserva puede contener múltiples acompañantes.
+     * Relación de cardinalidad Muchos-a-Uno con la reserva.
+     * Utiliza Lazy Loading para optimizar el rendimiento al cargar la lista de acompañantes.
      */
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_reserva", nullable = false)
     private Reserva reserva;
 }

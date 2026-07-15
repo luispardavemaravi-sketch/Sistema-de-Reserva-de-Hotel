@@ -3,131 +3,131 @@ package pe.edu.utp.sistemadereservacionhotel.service.reserva.impl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.ReservaRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.ReservaResponseDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.reserva.Reserva;
-import pe.edu.utp.sistemadereservacionhotel.repository.reserva.ReservaRepository;
-import pe.edu.utp.sistemadereservacionhotel.service.reserva.ReservaServicio;
+import pe.edu.utp.sistemadereservacionhotel.repository.habitacion.HabitacionRepository;
+import pe.edu.utp.sistemadereservacionhotel.repository.huesped.HuespedRepository;
+import pe.edu.utp.sistemadereservacionhotel.repository.reserva.*;
+import pe.edu.utp.sistemadereservacionhotel.service.reserva.ReservaService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-@Transactional
-public class ReservaServiceImpl implements ReservaServicio {
+public class ReservaServiceImpl implements ReservaService {
+
     private final ReservaRepository repo;
+    private final HuespedRepository huespedRepo;
+    private final HabitacionRepository habitacionRepo;
+    private final EstadoReservaRepository estadoRepo;
+    private static final String ENTIDAD = "Reserva";
 
-    //Para guardar reservas
     @Override
-    public Reserva save(Reserva reserva) {
-        if (reserva.getIdReserva() != null) {
-            throw new IllegalArgumentException("Para actualizar use el metodo update");
-        }
-        if (repo.existsByCodigoReserva(reserva.getCodigoReserva())) {
-            throw new IllegalArgumentException("La reserva ya existe");
-        }
+    @Transactional
+    public ReservaResponseDTO crearReserva(ReservaRequestDTO dto) {
+        var huesped = huespedRepo.findById(dto.idHuesped())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Huesped", dto.idHuesped()));
+        var habitacion = habitacionRepo.findById(dto.idHabitacion())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", dto.idHabitacion()));
+
+        Reserva reserva = new Reserva();
+        reserva.setCodigoReserva(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         reserva.setFechaReserva(LocalDateTime.now(ZoneId.of("America/Lima")));
-        return repo.save(reserva);
+        reserva.setHuesped(huesped);
+        reserva.setHabitacion(habitacion);
+        reserva.setFechaEntradaPlanificada(dto.fechaEntradaPlanificada());
+        reserva.setFechaSalidaPlanificada(dto.fechaSalidaPlanificada());
+        reserva.setEstadoReserva(estadoRepo.findById(1L).orElseThrow(() -> new RecursoNoEncontradoException("Estado", 1L)));
+
+        return mapearADto(repo.save(reserva));
     }
 
-
-    //Actualizar Reserva
     @Override
-    public Reserva update(Reserva reserva) {
-        if (reserva.getCodigoReserva() == null) {
-            throw new IllegalArgumentException("El ID  no puede estar vacio para actualizar.");
+    @Transactional
+    public ReservaResponseDTO actualizarReserva(Long id, ReservaRequestDTO dto) {
+        Reserva existente = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
+
+        existente.setFechaEntradaPlanificada(dto.fechaEntradaPlanificada());
+        existente.setFechaSalidaPlanificada(dto.fechaSalidaPlanificada());
+
+        return mapearADto(repo.save(existente));
+    }
+
+    @Override
+    @Transactional
+    public void cancelarReserva(Long id) {
+        Reserva reserva = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
+
+        if (reserva.getCheckIn() != null) {
+            throw new ValidacionException("No se puede cancelar una reserva que ya inició.");
         }
 
-        //1. Buscar reserva existente en DB
-        Reserva existente = repo.findByCodigoReserva(reserva.getCodigoReserva())
-                .orElseThrow(() -> new RuntimeException("Reserva no encontrada con codigo: " + reserva.getCodigoReserva()));
-
-        //2. Actualizar reserva solo con los campos que llegaron
-
-        existente.setIdReserva(reserva.getIdReserva());
-        existente.setCodigoReserva(reserva.getCodigoReserva());
-        existente.setFechaReserva(reserva.getFechaReserva());
-        existente.setFechaEntradaPlanificada(reserva.getFechaEntradaPlanificada());
-        existente.setMontoTotalEstimado(reserva.getMontoTotalEstimado());
-        existente.setHuesped(reserva.getHuesped());
-        existente.setEstadoReserva(reserva.getEstadoReserva());
-        existente.setCheckIn(reserva.getCheckIn());
-        existente.setCheckOut(reserva.getCheckOut());
-        existente.setAcompanantes(reserva.getAcompanantes());
-        return repo.save(existente);
-    }
-
-    //Eliminar reserva
-    @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id)) {
-            throw new RuntimeException("Reserva no encontrada con codigo: " + id);
-        }
-        repo.deleteById(id);
-    }
-
-    //Lista todas las reservas
-    @Override
-    @Transactional(readOnly = true)
-    public List<Reserva> findAll() {
-        return repo.findAll();
-    }
-
-    //Buscar por Id
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<Reserva> findById(Long id) {
-        if (id == null || id <= 0) {
-            throw new IllegalArgumentException("El ID debe ser positivo");
-        }
-        return repo.findById(id);
+        reserva.setEstadoReserva(estadoRepo.findById(3L).orElseThrow());
+        repo.save(reserva);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<Reserva> findByCodigoReserva(String codigo) {
-        if (codigo == null || codigo.isBlank()) {
-            throw new IllegalArgumentException("El código no puede estar vacío");
-        }
-        return repo.findByCodigoReserva(codigo.trim());
+    public List<ReservaResponseDTO> listarTodas() {
+        return repo.findAll().stream().map(this::mapearADto).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Reserva> findByHuesped(Long idHuesped) {
-        if (idHuesped == null || idHuesped <= 0) {
-            throw new IllegalArgumentException("El ID del huésped debe ser positivo");
-        }
-        return repo.findByHuesped_IdHuesped(idHuesped);
-    }
-
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Reserva> findByEstado(Long idEstado) {
-        return repo.findByEstadoReserva_IdEstado(idEstado);
+    public ReservaResponseDTO buscarPorId(Long id) {
+        return mapearADto(repo.findById(id).orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Reserva> findByFechaEntrada(LocalDate fecha) {
-        return repo.findByFechaEntradaPlanificada(fecha);
+    public ReservaResponseDTO buscarPorCodigo(String codigoReserva) {
+        return mapearADto(repo.findByCodigoReserva(codigoReserva).orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, codigoReserva)));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<Reserva> findByRangoFechas(LocalDate inicio, LocalDate fin) {
-        if (inicio.isAfter(fin)) {
-            throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha fin");
-        }
-        return repo.findByFechaEntradaPlanificadaBetween(inicio, fin);
+    public List<ReservaResponseDTO> buscarPorHuesped(Long idHuesped) {
+        return repo.findByHuesped_IdHuesped(idHuesped).stream().map(this::mapearADto).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public long count() {
-        return repo.count();
+    public List<ReservaResponseDTO> buscarPorEstado(Long idEstado) {
+        return repo.findByEstadoReserva_IdEstado(idEstado).stream().map(this::mapearADto).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReservaResponseDTO> buscarPorFechaEntrada(LocalDate fecha) {
+        return repo.findByFechaEntradaPlanificada(fecha).stream().map(this::mapearADto).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReservaResponseDTO> buscarPorRangoFechas(LocalDate inicio, LocalDate fin) {
+        return repo.findByFechaEntradaPlanificadaBetween(inicio, fin).stream().map(this::mapearADto).collect(Collectors.toList());
+    }
+
+    private ReservaResponseDTO mapearADto(Reserva r) {
+        return new ReservaResponseDTO(
+                r.getIdReserva(),
+                r.getCodigoReserva(),
+                r.getFechaReserva(),
+                r.getFechaEntradaPlanificada(),
+                r.getFechaSalidaPlanificada(),
+                r.getMontoTotalEstimado(),
+                r.getHuesped().getIdHuesped(),
+                r.getHabitacion().getIdHabitacion(),
+                r.getEstadoReserva().getNombreEstado()
+        );
     }
 }

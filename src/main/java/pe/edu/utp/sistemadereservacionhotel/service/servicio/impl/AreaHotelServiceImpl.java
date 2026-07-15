@@ -1,81 +1,81 @@
-package pe.edu.utp.sistemadereservacionhotel.service.impl;
+package pe.edu.utp.sistemadereservacionhotel.service.servicio.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import pe.edu.utp.sistemadereservacionhotel.dto.AreaHotelDTO;
 import pe.edu.utp.sistemadereservacionhotel.model.servicio.AreaHotel;
 import pe.edu.utp.sistemadereservacionhotel.repository.servicio.AreaHotelRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.servicio.AreaHotelService;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.*;
 
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
-@Transactional
 public class AreaHotelServiceImpl implements AreaHotelService {
 
     private final AreaHotelRepository repo;
+    private static final String ENTIDAD = "Área del Hotel";
 
     @Override
-    public AreaHotel save(AreaHotel areaHotel) {
-        if (areaHotel.getIdAreaHotel() != null) {
-            throw new IllegalArgumentException("Para actualizar use el método update");
+    @Transactional
+    public AreaHotelDTO registrarArea(AreaHotelDTO dto) {
+        if (repo.existsByNombreArea(dto.nombreArea())) {
+            throw new DuplicadoException("Ya existe un área con el nombre: " + dto.nombreArea());
         }
-        if (repo.existsByNombreArea(areaHotel.getNombreArea())) {
-            throw new IllegalArgumentException("Ya existe un área con el nombre: " + areaHotel.getNombreArea());
-        }
-        return repo.save(areaHotel);
+        AreaHotel entidad = new AreaHotel();
+        entidad.setNombreArea(dto.nombreArea().trim());
+        entidad.setUbicacion(dto.ubicacion().trim());
+        return mapearADto(repo.save(entidad));
     }
 
     @Override
-    public AreaHotel update(AreaHotel areaHotel) {
-        if (areaHotel.getIdAreaHotel() == null) {
-            throw new IllegalArgumentException("El ID no puede ser nulo para actualizar");
-        }
-        AreaHotel existente = repo.findById(areaHotel.getIdAreaHotel())
-                .orElseThrow(() -> new RuntimeException("Área no encontrada con ID: " + areaHotel.getIdAreaHotel()));
-        existente.setNombreArea(areaHotel.getNombreArea());
-        existente.setUbicacion(areaHotel.getUbicacion());
-        return repo.save(existente);
+    @Transactional
+    public AreaHotelDTO actualizarArea(Long id, AreaHotelDTO dto) {
+        AreaHotel existente = repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
+
+        existente.setNombreArea(dto.nombreArea().trim());
+        existente.setUbicacion(dto.ubicacion().trim());
+        return mapearADto(repo.save(existente));
     }
 
     @Override
-    public void delete(Long id) {
-        if (!repo.existsById(id)) throw new RuntimeException("Área no encontrada con ID: " + id);
+    @Transactional
+    public void eliminarArea(Long id) {
+        if (!repo.existsById(id)) throw new RecursoNoEncontradoException(ENTIDAD, id);
         repo.deleteById(id);
     }
 
-    @Override @Transactional(readOnly = true)
-    public List<AreaHotel> findAll() { return repo.findAll(); }
-
-    @Override @Transactional(readOnly = true)
-    public Optional<AreaHotel> findById(Long id) {
-        if (id == null || id <= 0) throw new IllegalArgumentException("El ID debe ser positivo");
-        return repo.findById(id);
+    @Override
+    @Transactional(readOnly = true)
+    public List<AreaHotelDTO> listarTodas() {
+        return repo.findAll().stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
-    @Override @Transactional(readOnly = true)
-    public Optional<AreaHotel> findByNombreArea(String nombre) {
-        if (nombre == null || nombre.isBlank()) throw new IllegalArgumentException("El nombre no puede estar vacío");
-        return repo.findByNombreArea(nombre.trim());
+    @Override
+    @Transactional(readOnly = true)
+    public AreaHotelDTO buscarPorId(Long id) {
+        return mapearADto(repo.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id)));
     }
 
-    @Override @Transactional(readOnly = true)
-    public List<AreaHotel> findByNombre(String nombre) {
-        if (nombre == null || nombre.isBlank()) throw new IllegalArgumentException("El nombre no puede estar vacío");
-        return repo.findByNombreAreaContainingIgnoreCase(nombre.trim());
+    @Override
+    @Transactional(readOnly = true)
+    public List<AreaHotelDTO> buscarPorUbicacion(String ubicacion) {
+        if (ubicacion == null || ubicacion.isBlank()) {
+            throw new ValidacionException("La ubicación para búsqueda no puede estar vacía.");
+        }
+        return repo.findByUbicacionContainingIgnoreCase(ubicacion.trim()).stream()
+                .map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
-    @Override @Transactional(readOnly = true)
-    public List<AreaHotel> findByUbicacion(String ubicacion) {
-        if (ubicacion == null || ubicacion.isBlank()) throw new IllegalArgumentException("La ubicación no puede estar vacía");
-        return repo.findByUbicacionContainingIgnoreCase(ubicacion.trim());
+    private AreaHotelDTO mapearADto(AreaHotel e) {
+        return new AreaHotelDTO(e.getIdAreaHotel(), e.getNombreArea(), e.getUbicacion());
     }
-
-    @Override @Transactional(readOnly = true)
-    public boolean existsByNombreArea(String nombre) { return repo.existsByNombreArea(nombre.trim()); }
-
-    @Override @Transactional(readOnly = true)
-    public long count() { return repo.count(); }
 }

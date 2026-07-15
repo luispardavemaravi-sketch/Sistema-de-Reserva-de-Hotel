@@ -1,28 +1,25 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion;
 
-import pe.edu.utp.sistemadereservacionhotel.model.habitacion.PrecioHabitacion;
+import pe.edu.utp.sistemadereservacionhotel.dto.PrecioHabitacionDTO;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Servicio para la administración de tarifas dinámicas.
+ */
 public interface PrecioHabitacionService {
 
-    PrecioHabitacion save(PrecioHabitacion precioHabitacion);
+    /**
+     * Establece una nueva tarifa, validando que no existan traslapes temporales
+     * con tarifas ya registradas para la misma habitación.
+     */
+    PrecioHabitacionDTO establecerTarifa(PrecioHabitacionDTO dto);
 
-    PrecioHabitacion update(PrecioHabitacion precioHabitacion);
+    List<PrecioHabitacionDTO> listarHistorialPorHabitacion(Long idHabitacion);
 
-    void delete(Long id);
+    List<PrecioHabitacionDTO> buscarPorRangoFecha(LocalDate inicio, LocalDate fin);
 
-    List<PrecioHabitacion> findAll();
-
-    Optional<PrecioHabitacion> findById(Long id);
-
-    List<PrecioHabitacion> findByHabitacion(Long idHabitacion);
-
-    List<PrecioHabitacion> findByRangoFecha(LocalDate inicio, LocalDate fin);
-
-    List<PrecioHabitacion> findByRangoMonto(Double montoMin, Double montoMax);
-
-    long count();
+    List<PrecioHabitacionDTO> buscarPorRangoMonto(BigDecimal min, BigDecimal max);
 }

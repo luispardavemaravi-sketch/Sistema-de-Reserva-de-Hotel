@@ -16,6 +16,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio transaccional responsable de administrar las líneas de facturación (items consumidos).
+ */
 @RequiredArgsConstructor
 @Service
 public class DetalleComprobanteServiceImpl implements DetalleComprobanteService {
@@ -23,6 +26,10 @@ public class DetalleComprobanteServiceImpl implements DetalleComprobanteService 
     private final DetalleComprobanteRepository detalleRepo;
     private final ComprobantePagoRepository comprobanteRepo;
 
+    /**
+     * Vincula un nuevo consumo a la cuenta maestra (Comprobante).
+     * Aplica la operación matemática de subtotal utilizando la precisión de BigDecimal.
+     */
     @Override
     @Transactional
     public DetalleComprobanteResponseDTO agregarDetalle(DetalleComprobanteRequestDTO request) {
@@ -34,7 +41,7 @@ public class DetalleComprobanteServiceImpl implements DetalleComprobanteService 
         entidad.setDescripcion(request.descripcion());
         entidad.setPrecioUnitario(request.precioUnitario());
 
-        // Multiplicación segura con BigDecimal
+        // Multiplicación financiera segura
         BigDecimal subtotal = request.precioUnitario().multiply(new BigDecimal(request.cantidad()));
         entidad.setSubtotalLinea(subtotal);
         entidad.setComprobantePago(comprobante);
@@ -42,6 +49,9 @@ public class DetalleComprobanteServiceImpl implements DetalleComprobanteService 
         return mapearADto(detalleRepo.save(entidad));
     }
 
+    /**
+     * Recalcula la carga financiera si el cliente solicita una rectificación en los items consumidos.
+     */
     @Override
     @Transactional
     public DetalleComprobanteResponseDTO actualizarDetalle(Long id, DetalleComprobanteRequestDTO request) {

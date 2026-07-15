@@ -1,29 +1,27 @@
 package pe.edu.utp.sistemadereservacionhotel.service.reserva;
 
-import pe.edu.utp.sistemadereservacionhotel.model.reserva.Acompanante;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.AcompananteRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.AcompananteResponseDTO;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Servicio para la gestión de los co-ocupantes de una habitación.
+ * Vincula la identidad de los acompañantes al identificador maestro de la Reserva.
+ */
 public interface AcompananteService {
 
-    Acompanante save(Acompanante acompanante);
+    AcompananteResponseDTO registrarAcompanante(AcompananteRequestDTO dto);
 
-    Acompanante update(Acompanante acompanante);
+    AcompananteResponseDTO actualizarAcompanante(Long id, AcompananteRequestDTO dto);
 
-    void delete(Long id);
+    void eliminarAcompanante(Long id);
 
-    List<Acompanante> findAll();
+    List<AcompananteResponseDTO> listarTodos();
 
-    Optional<Acompanante> findById(Long id);
+    AcompananteResponseDTO buscarPorId(Long id);
 
-    List<Acompanante> findByReserva(Long idReserva);
+    List<AcompananteResponseDTO> buscarPorReserva(Long idReserva);
 
-    List<Acompanante> findByDocumentoIdentidad(String documento);
-
-    List<Acompanante> findByNombre(String nombre);
-
-    List<Acompanante> findByParentesco(String parentesco);
-
-    long count();
+    List<AcompananteResponseDTO> buscarPorDocumentoIdentidad(String documento);
 }

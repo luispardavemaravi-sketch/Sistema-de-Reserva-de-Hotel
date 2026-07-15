@@ -1,27 +1,25 @@
 package pe.edu.utp.sistemadereservacionhotel.service.reserva;
 
-import pe.edu.utp.sistemadereservacionhotel.model.reserva.EstadoReserva;
+import pe.edu.utp.sistemadereservacionhotel.dto.EstadoReservaDTO;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Servicio paramétrico para gestionar el ciclo de vida de una reserva (Ej. Pendiente, Confirmada, Cancelada).
+ */
 public interface EstadoReservaService {
 
-    EstadoReserva save(EstadoReserva estadoReserva);
+    EstadoReservaDTO registrarEstado(EstadoReservaDTO dto);
 
-    EstadoReserva update(EstadoReserva estadoReserva);
+    EstadoReservaDTO actualizarEstado(Long id, EstadoReservaDTO dto);
 
-    void delete(Long id);
+    void eliminarEstado(Long id);
 
-    List<EstadoReserva> findAll();
+    List<EstadoReservaDTO> listarTodos();
 
-    Optional<EstadoReserva> findById(Long id);
+    EstadoReservaDTO buscarPorId(Long id);
 
-    Optional<EstadoReserva> findByNombreEstado(String nombreEstado);
+    EstadoReservaDTO buscarPorNombre(String nombreEstado);
 
-    List<EstadoReserva> findByEsModificable(Boolean esModificable);
-
-    boolean existsByNombreEstado(String nombreEstado);
-
-    long count();
+    List<EstadoReservaDTO> buscarPorEsModificable(Boolean esModificable);
 }

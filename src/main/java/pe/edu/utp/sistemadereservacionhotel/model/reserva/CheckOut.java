@@ -57,4 +57,10 @@ public class CheckOut implements Serializable {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_reserva", unique = true, nullable = false)
     private Reserva reserva;
+
+    /**
+     * Comentarios adicionales sobre el estado de la habitación al salir.
+     */
+    @Column(length = 500)
+    private String observaciones;
 }

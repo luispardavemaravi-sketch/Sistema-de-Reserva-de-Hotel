@@ -1,29 +1,19 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion;
 
-import pe.edu.utp.sistemadereservacionhotel.model.habitacion.Equipamiento;
-
+import pe.edu.utp.sistemadereservacionhotel.dto.EquipamientoDTO;
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 public interface EquipamientoService {
 
-    Equipamiento save(Equipamiento equipamiento);
+    EquipamientoDTO registrarEquipamiento(EquipamientoDTO dto);
 
-    Equipamiento update(Equipamiento equipamiento);
+    void eliminarEquipamiento(Long id);
 
-    void delete(Long id);
+    List<EquipamientoDTO> listarTodos();
 
-    List<Equipamiento> findAll();
-
-    Optional<Equipamiento> findById(Long id);
-
-    Optional<Equipamiento> findByNombre(String nombre);
-
-    List<Equipamiento> findByNombreContaining(String nombre);
-
-    List<Equipamiento> findByCostoMaximo(Double costoMaximo);
-
-    boolean existsByNombre(String nombre);
-
-    long count();
+    /**
+     * Filtra por costo máximo utilizando BigDecimal para precisión contable.
+     */
+    List<EquipamientoDTO> buscarPorCostoMaximo(BigDecimal costoMaximo);
 }

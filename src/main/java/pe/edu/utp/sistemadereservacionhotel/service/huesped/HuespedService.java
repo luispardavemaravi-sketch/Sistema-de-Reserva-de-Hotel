@@ -1,33 +1,43 @@
 package pe.edu.utp.sistemadereservacionhotel.service.huesped;
 
-import pe.edu.utp.sistemadereservacionhotel.model.huesped.Huesped;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.HuespedRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.HuespedResponseDTO;
 
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Contrato de operaciones de negocio para la gestión de huéspedes.
+ * Centraliza la validación de identidad y el control de acceso al perfil del cliente.
+ */
 public interface HuespedService {
 
-    Huesped save(Huesped huesped);
+    /**
+     * Da de alta un nuevo huésped en el sistema.
+     * Válida que el email y documento no estén duplicados antes de la inserción.
+     */
+    HuespedResponseDTO registrarHuesped(HuespedRequestDTO dto);
 
-    Huesped update(Huesped huesped);
+    /**
+     * Actualiza los datos modificables de contacto del huésped.
+     * Protege la inmutabilidad del documento de identidad y del correo electrónico.
+     */
+    HuespedResponseDTO actualizarHuesped(Long id, HuespedRequestDTO dto);
 
-    void delete(Long id);
+    /**
+     * Ejecuta la baja lógica del cliente para cumplir con la integridad transaccional
+     * de los históricos de reserva y con las normativas europeas de protección de datos (RGPD).
+     */
+    void darDeBajaHuesped(Long id);
 
-    List<Huesped> findAll();
+    List<HuespedResponseDTO> listarTodos();
 
-    Optional<Huesped> findById(Long id);
+    HuespedResponseDTO buscarPorId(Long id);
 
-    Optional<Huesped> findByEmail(String email);
+    HuespedResponseDTO buscarPorEmail(String email);
 
-    Optional<Huesped> findByDocumentoIdentidad(String documento);
+    HuespedResponseDTO buscarPorDocumentoIdentidad(String documento);
 
-    List<Huesped> findByNombre(String nombre);
+    List<HuespedResponseDTO> buscarPorNombre(String nombre);
 
-    List<Huesped> findByApellidos(String apellidos);
-
-    boolean existsByEmail(String email);
-
-    boolean existsByDocumentoIdentidad(String documento);
-
-    long count();
+    List<HuespedResponseDTO> buscarPorApellidos(String apellidos);
 }

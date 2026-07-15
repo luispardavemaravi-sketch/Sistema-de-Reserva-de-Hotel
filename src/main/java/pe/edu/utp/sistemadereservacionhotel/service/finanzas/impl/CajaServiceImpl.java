@@ -20,6 +20,11 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Implementación transaccional para la gestión del ciclo de vida de las cajas.
+ * Aplica reglas de negocio estrictas para evitar colisiones operativas, asegurando
+ * que un empleado posea un único punto de facturación activo.
+ */
 @RequiredArgsConstructor
 @Service
 public class CajaServiceImpl implements CajaService {
@@ -27,14 +32,16 @@ public class CajaServiceImpl implements CajaService {
     private final CajaRepository cajaRepo;
     private final EmpleadoRepository empleadoRepo;
 
+    /**
+     * Inicia una nueva sesión de arqueo.
+     * Patrón aplicado: Fail-Fast (Validación de precondiciones antes de la persistencia).
+     */
     @Override
     @Transactional
     public CajaResponseDTO abrirCaja(CajaAperturaDTO dto) {
-        // 1. Validar existencia del empleado
         Empleado empleado = empleadoRepo.findById(dto.idEmpleado())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Empleado", dto.idEmpleado()));
 
-        // 2. Regla de Negocio: Un empleado no puede tener más de una caja abierta a la vez
         boolean tieneCajaAbierta = cajaRepo.findByEmpleado_IdEmpleado(dto.idEmpleado())
                 .stream()
                 .anyMatch(Caja::getEstaAbierta);
@@ -43,7 +50,6 @@ public class CajaServiceImpl implements CajaService {
             throw new DuplicadoException("El empleado ya posee una sesión de caja abierta en este momento.");
         }
 
-        // 3. Construcción y Persistencia
         Caja nuevaCaja = new Caja();
         nuevaCaja.setFecha(LocalDate.now(ZoneId.of("America/Lima")));
         nuevaCaja.setMontoApertura(dto.montoApertura());
@@ -55,6 +61,9 @@ public class CajaServiceImpl implements CajaService {
         return mapearADto(cajaGuardada);
     }
 
+    /**
+     * Clausura una sesión operativa, bloqueando nuevas transacciones en dicho terminal.
+     */
     @Override
     @Transactional
     public CajaResponseDTO cerrarCaja(Long idCaja, BigDecimal montoCierre) {
@@ -128,7 +137,9 @@ public class CajaServiceImpl implements CajaService {
                 .collect(Collectors.toList());
     }
 
-    // Mapeo manual estandarizado
+    /**
+     * Método auxiliar (Factory Method interno) para encapsular la conversión manual Entidad -> DTO.
+     */
     private CajaResponseDTO mapearADto(Caja entidad) {
         return new CajaResponseDTO(
                 entidad.getIdCaja(),

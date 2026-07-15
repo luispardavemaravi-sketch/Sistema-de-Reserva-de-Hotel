@@ -1,27 +1,23 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion;
 
-import pe.edu.utp.sistemadereservacionhotel.model.habitacion.Piso;
+
+import pe.edu.utp.sistemadereservacionhotel.dto.PisoDTO;
 
 import java.util.List;
-import java.util.Optional;
+
 
 public interface PisoService {
+    PisoDTO registrarPiso(PisoDTO dto);
 
-    Piso save(Piso piso);
+    PisoDTO actualizarPiso(Long id, PisoDTO dto);
 
-    Piso update(Piso piso);
+    void eliminarPiso(Long id);
 
-    void delete(Long id);
+    List<PisoDTO> listarTodos();
 
-    List<Piso> findAll();
+    PisoDTO buscarPorId(Long id);
 
-    Optional<Piso> findById(Long id);
+    PisoDTO buscarPorNumero(Integer numero);
 
-    Optional<Piso> findByNumeroPiso(Integer numeroPiso);
-
-    List<Piso> findBySector(String sector);
-
-    boolean existsByNumeroPiso(Integer numeroPiso);
-
-    long count();
+    List<PisoDTO> buscarPorSector(String sector);
 }

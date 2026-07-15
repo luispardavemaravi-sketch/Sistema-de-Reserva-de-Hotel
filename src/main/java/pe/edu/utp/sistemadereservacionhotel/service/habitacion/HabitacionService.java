@@ -1,35 +1,30 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion;
 
-import pe.edu.utp.sistemadereservacionhotel.model.habitacion.Habitacion;
+import pe.edu.utp.sistemadereservacionhotel.dto.request.HabitacionRequestDTO;
+import pe.edu.utp.sistemadereservacionhotel.dto.response.HabitacionResponseDTO;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
+/**
+ * Servicio transaccional para la gestión del inventario físico.
+ * Aísla la persistencia mediante DTOs y gestiona cambios de estado operativo.
+ */
 public interface HabitacionService {
 
-    Habitacion save(Habitacion habitacion);
+    HabitacionResponseDTO registrarHabitacion(HabitacionRequestDTO dto);
 
-    Habitacion update(Habitacion habitacion);
+    HabitacionResponseDTO actualizarHabitacion(Long id, HabitacionRequestDTO dto);
 
-    void delete(Long id);
+    void darDeBajaHabitacion(Long id); // Borrado lógico
 
-    List<Habitacion> findAll();
+    List<HabitacionResponseDTO> listarTodas();
 
-    Optional<Habitacion> findById(Long id);
+    HabitacionResponseDTO buscarPorId(Long id);
 
-    Optional<Habitacion> findByNumeroHabitacion(String numero);
+    HabitacionResponseDTO buscarPorNumero(String numero);
 
-    List<Habitacion> findByEstadoActivo(boolean activo);
+    List<HabitacionResponseDTO> buscarPorRangoPrecio(BigDecimal min, BigDecimal max);
 
-    List<Habitacion> findByPiso(Long idPiso);
-
-    List<Habitacion> findByTipo(Long idTipo);
-
-    List<Habitacion> findByEstadoHabitacion(Long idEstadoHabitacion);
-
-    List<Habitacion> findByRangoPrecio(Double precioMin, Double precioMax);
-
-    boolean existsByNumeroHabitacion(String numero);
-
-    long count();
+    HabitacionResponseDTO actualizarTarifa(Long id, BigDecimal nuevoPrecio);
 }

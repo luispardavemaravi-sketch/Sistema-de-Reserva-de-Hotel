@@ -13,6 +13,9 @@ import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEn
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio paramétrico de solo lectura y mantenimiento de catálogos (CRUD de dominio).
+ */
 @RequiredArgsConstructor
 @Service
 public class MetodoPagoServiceImpl implements MetodoPagoService {

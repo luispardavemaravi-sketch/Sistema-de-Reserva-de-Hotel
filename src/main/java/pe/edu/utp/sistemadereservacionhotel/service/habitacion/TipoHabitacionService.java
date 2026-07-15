@@ -1,28 +1,21 @@
 package pe.edu.utp.sistemadereservacionhotel.service.habitacion;
 
-import pe.edu.utp.sistemadereservacionhotel.model.habitacion.TipoHabitacion;
+import pe.edu.utp.sistemadereservacionhotel.dto.TipoHabitacionDTO;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 public interface TipoHabitacionService {
-    TipoHabitacion save(TipoHabitacion tipoHabitacion);
+    // ELIMINADO save() y update() genéricos.
+    // Usamos métodos de intención de negocio.
+    TipoHabitacionDTO registrarTipo(TipoHabitacionDTO dto);
 
-    TipoHabitacion update(TipoHabitacion tipoHabitacion);
+    TipoHabitacionDTO actualizarTipo(Long id, TipoHabitacionDTO dto);
 
-    void delete(Long id);
+    List<TipoHabitacionDTO> listarTodos();
 
-    List<TipoHabitacion> findAll();
+    TipoHabitacionDTO buscarPorId(Long id);
 
-    Optional<TipoHabitacion> findById(Long id);
-
-    Optional<TipoHabitacion> findByNombre(String nombre);
-
-    List<TipoHabitacion> findByCapacidadMinima(Integer capacidad);
-
-    List<TipoHabitacion> findByRangoPrecio(Double precioMin, Double precioMax);
-
-    boolean existsByNombre(String nombre);
-
-    long count();
+    // Corregido: BigDecimal en lugar de Double
+    List<TipoHabitacionDTO> buscarPorRangoPrecio(BigDecimal precioMin, BigDecimal precioMax);
 }
