@@ -32,11 +32,19 @@ public class ReservaServiceImpl implements ReservaService {
     @Override
     @Transactional
     public ReservaResponseDTO crearReserva(ReservaRequestDTO dto) {
+        // 1. FAIL-FAST: Validación en memoria antes de golpear la base de datos
+        if (dto.fechaSalidaPlanificada().isBefore(dto.fechaEntradaPlanificada())) {
+            throw new IllegalArgumentException("La fecha de salida planificada no puede ser anterior a la entrada.");
+        }
+
+        // 2. Ejecución de I/O solo con datos válidos
         var huesped = huespedRepo.findById(dto.idHuesped())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Huesped", dto.idHuesped()));
+
         var habitacion = habitacionRepo.findById(dto.idHabitacion())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", dto.idHabitacion()));
 
+        // 3. Construcción del objeto
         Reserva reserva = new Reserva();
         reserva.setCodigoReserva(UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         reserva.setFechaReserva(LocalDateTime.now(ZoneId.of("America/Lima")));
@@ -44,8 +52,13 @@ public class ReservaServiceImpl implements ReservaService {
         reserva.setHabitacion(habitacion);
         reserva.setFechaEntradaPlanificada(dto.fechaEntradaPlanificada());
         reserva.setFechaSalidaPlanificada(dto.fechaSalidaPlanificada());
-        reserva.setEstadoReserva(estadoRepo.findById(1L).orElseThrow(() -> new RecursoNoEncontradoException("Estado", 1L)));
 
+        // Alerta de diseño: Hardcoding (1L) es una mala práctica para entornos de producción.
+        // Deberías usar una constante o un Enum para buscar el estado inicial (ej. PENDIENTE).
+        reserva.setEstadoReserva(estadoRepo.findById(1L)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Estado", 1L)));
+
+        // 4. Persistencia y mapeo
         return mapearADto(repo.save(reserva));
     }
 
