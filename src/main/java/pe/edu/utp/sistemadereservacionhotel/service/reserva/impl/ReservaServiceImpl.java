@@ -12,9 +12,11 @@ import pe.edu.utp.sistemadereservacionhotel.repository.reserva.*;
 import pe.edu.utp.sistemadereservacionhotel.service.reserva.ReservaService;
 import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,6 +54,13 @@ public class ReservaServiceImpl implements ReservaService {
         reserva.setHabitacion(habitacion);
         reserva.setFechaEntradaPlanificada(dto.fechaEntradaPlanificada());
         reserva.setFechaSalidaPlanificada(dto.fechaSalidaPlanificada());
+
+        // Calcula el monto estimado en base a las noches y la tarifa de la habitación.
+        long noches = ChronoUnit.DAYS.between(dto.fechaEntradaPlanificada(), dto.fechaSalidaPlanificada());
+        if (noches <= 0) {
+            noches = 1;
+        }
+        reserva.setMontoTotalEstimado(habitacion.getPrecioActual().multiply(BigDecimal.valueOf(noches)));
 
         // Alerta de diseño: Hardcoding (1L) es una mala práctica para entornos de producción.
         // Deberías usar una constante o un Enum para buscar el estado inicial (ej. PENDIENTE).
