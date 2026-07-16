@@ -10,7 +10,6 @@ import pe.edu.utp.sistemadereservacionhotel.service.habitacion.EstadoHabitacionS
 import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.RecursoNoEncontradoException;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor

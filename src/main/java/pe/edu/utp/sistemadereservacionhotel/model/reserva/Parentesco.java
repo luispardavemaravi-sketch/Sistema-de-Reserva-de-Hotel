@@ -11,5 +11,8 @@ public enum Parentesco {
     HERMANO_A,
     AMIGO_A,
     COLEGA,
+    ESPOSO,
+    ESPOSA,
+    HIJO,
     OTRO
 }

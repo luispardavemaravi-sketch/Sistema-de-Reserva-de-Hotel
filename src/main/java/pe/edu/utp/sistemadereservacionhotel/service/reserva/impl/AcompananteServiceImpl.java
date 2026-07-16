@@ -97,10 +97,11 @@ public class AcompananteServiceImpl implements AcompananteService {
      * Extrae la lógica de mapeo para evitar duplicidad de código (Cumplimiento DRY).
      */
     private void mapearDatos(Acompanante e, AcompananteRequestDTO dto, Reserva r) {
+        // Ahora como documentoIdentidad es String en el DTO, .trim() funcionará
         e.setNombreCompleto(dto.nombre().trim());
         e.setApellidos(dto.apellidos().trim());
         e.setDocumentoIdentidad(dto.documentoIdentidad().trim());
-        // Convertimos el String del DTO al Enum de la entidad
+
         try {
             e.setParentesco(Parentesco.valueOf(dto.parentesco().toUpperCase()));
         } catch (IllegalArgumentException ex) {

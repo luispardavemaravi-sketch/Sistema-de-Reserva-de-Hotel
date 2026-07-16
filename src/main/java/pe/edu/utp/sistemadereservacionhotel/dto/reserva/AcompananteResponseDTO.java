@@ -1,5 +1,7 @@
 package pe.edu.utp.sistemadereservacionhotel.dto.reserva;
 
+
+
 public record AcompananteResponseDTO(
         Long idAcompanante,
         String nombre,
