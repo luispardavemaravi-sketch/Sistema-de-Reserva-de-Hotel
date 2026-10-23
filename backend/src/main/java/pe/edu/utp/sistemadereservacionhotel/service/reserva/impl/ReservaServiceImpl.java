@@ -45,6 +45,9 @@ public class ReservaServiceImpl implements ReservaService {
 
         var habitacion = habitacionRepo.findById(dto.idHabitacion())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", dto.idHabitacion()));
+        if (habitacion.getPrecioActual() == null) {
+            throw new ValidacionException("La habitación debe tener un precio actual configurado.");
+        }
 
         // 3. Construcción del objeto
         Reserva reserva = new Reserva();
@@ -62,8 +65,10 @@ public class ReservaServiceImpl implements ReservaService {
         }
         reserva.setMontoTotalEstimado(habitacion.getPrecioActual().multiply(BigDecimal.valueOf(noches)));
 
-        // Alerta de diseño: Hardcoding (1L) es una mala práctica para entornos de producción.
-        // Deberías usar una constante o un Enum para buscar el estado inicial (ej. PENDIENTE).
+        // Alerta de diseño: Hardcoding (1L) es una mala práctica para entornos de
+        // producción.
+        // Deberías usar una constante o un Enum para buscar el estado inicial (ej.
+        // PENDIENTE).
         reserva.setEstadoReserva(estadoRepo.findById(1L)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Estado", 1L)));
 
@@ -112,7 +117,8 @@ public class ReservaServiceImpl implements ReservaService {
     @Override
     @Transactional(readOnly = true)
     public ReservaResponseDTO buscarPorCodigo(String codigoReserva) {
-        return mapearADto(repo.findByCodigoReserva(codigoReserva).orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, codigoReserva)));
+        return mapearADto(repo.findByCodigoReserva(codigoReserva)
+                .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, codigoReserva)));
     }
 
     @Override
@@ -136,7 +142,8 @@ public class ReservaServiceImpl implements ReservaService {
     @Override
     @Transactional(readOnly = true)
     public List<ReservaResponseDTO> buscarPorRangoFechas(LocalDate inicio, LocalDate fin) {
-        return repo.findByFechaEntradaPlanificadaBetween(inicio, fin).stream().map(this::mapearADto).collect(Collectors.toList());
+        return repo.findByFechaEntradaPlanificadaBetween(inicio, fin).stream().map(this::mapearADto)
+                .collect(Collectors.toList());
     }
 
     private ReservaResponseDTO mapearADto(Reserva r) {
@@ -149,7 +156,6 @@ public class ReservaServiceImpl implements ReservaService {
                 r.getMontoTotalEstimado(),
                 r.getHuesped().getIdHuesped(),
                 r.getHabitacion().getIdHabitacion(),
-                r.getEstadoReserva().getNombreEstado()
-        );
+                r.getEstadoReserva().getNombreEstado());
     }
 }

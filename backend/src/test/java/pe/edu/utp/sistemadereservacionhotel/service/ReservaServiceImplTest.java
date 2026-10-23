@@ -16,8 +16,10 @@ import pe.edu.utp.sistemadereservacionhotel.repository.reserva.ReservaRepository
 import pe.edu.utp.sistemadereservacionhotel.repository.habitacion.HabitacionRepository;
 import pe.edu.utp.sistemadereservacionhotel.repository.huesped.HuespedRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.reserva.impl.ReservaServiceImpl;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -25,9 +27,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Suite de pruebas unitarias para aislar y validar la lógica de negocio de ReservaServiceImpl.
- * Utiliza Mockito para simular la capa de persistencia (JPA/Hibernate) y garantizar
- * que las pruebas no dependan de conexiones a bases de datos ni de tiempos de red.
+ * Suite de pruebas unitarias para aislar y validar la lógica de negocio de
+ * ReservaServiceImpl.
+ * Utiliza Mockito para simular la capa de persistencia (JPA/Hibernate) y
+ * garantizar
+ * que las pruebas no dependan de conexiones a bases de datos ni de tiempos de
+ * red.
  */
 @ExtendWith(MockitoExtension.class)
 class ReservaServiceImplTest {
@@ -49,8 +54,10 @@ class ReservaServiceImplTest {
 
     /**
      * Prueba el escenario de éxito ("Happy Path") en la creación de una reserva.
-     * Verifica que si los datos de entrada son válidos y las dependencias existen en BD,
-     * el servicio orquesta correctamente las llamadas a los repositorios y retorna un DTO válido.
+     * Verifica que si los datos de entrada son válidos y las dependencias existen
+     * en BD,
+     * el servicio orquesta correctamente las llamadas a los repositorios y retorna
+     * un DTO válido.
      */
     @Test
     void crearReserva_DatosValidos_RetornaReservaDTONuevo() {
@@ -59,8 +66,7 @@ class ReservaServiceImplTest {
                 1L,
                 2L,
                 LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(5)
-        );
+                LocalDate.now().plusDays(5));
 
         Huesped huespedMock = new Huesped();
         huespedMock.setIdHuesped(1L);
@@ -68,6 +74,7 @@ class ReservaServiceImplTest {
 
         Habitacion habitacionMock = new Habitacion();
         habitacionMock.setIdHabitacion(2L);
+        habitacionMock.setPrecioActual(new BigDecimal("35.00"));
         when(habitacionRepo.findById(2L)).thenReturn(Optional.of(habitacionMock));
 
         EstadoReserva estadoMock = new EstadoReserva();
@@ -89,14 +96,18 @@ class ReservaServiceImplTest {
         assertNotNull(response, "El DTO de respuesta no debe ser nulo tras una inserción exitosa.");
         assertEquals("RES-TEST-01", response.codigoReserva(), "El código de reserva mapeado en el DTO es incorrecto.");
 
-        // Verificación crítica de I/O: Asegura que el método save() se llamó exactamente una vez.
-        verify(reservaRepo, times(1)).save(any(Reserva.class));
+        // Verificación crítica de I/O: Asegura que el método save() se llamó
+        // exactamente una vez.
+        var reservaCaptor = org.mockito.ArgumentCaptor.forClass(Reserva.class);
+        verify(reservaRepo, times(1)).save(reservaCaptor.capture());
+        assertEquals(new BigDecimal("140.00"), reservaCaptor.getValue().getMontoTotalEstimado());
     }
 
     /**
      * Prueba el principio de diseño "Fail-Fast".
      * Válida que una petición con incoherencia temporal (salida anterior a entrada)
-     * sea rechazada en memoria RAM, abortando el proceso antes de consumir recursos de I/O (Base de Datos).
+     * sea rechazada en memoria RAM, abortando el proceso antes de consumir recursos
+     * de I/O (Base de Datos).
      */
     @Test
     void crearReserva_FechasIncoherentes_LanzaExcepcionFailFast() {
@@ -105,7 +116,7 @@ class ReservaServiceImplTest {
                 1L,
                 2L,
                 LocalDate.now().plusDays(5), // Entrada
-                LocalDate.now().plusDays(1)  // Salida (Incoherencia temporal)
+                LocalDate.now().plusDays(1) // Salida (Incoherencia temporal)
         );
 
         // Act & Assert
@@ -113,11 +124,25 @@ class ReservaServiceImplTest {
             reservaService.crearReserva(requestInvalido);
         }, "El sistema debe lanzar IllegalArgumentException al detectar fechas invertidas.");
 
-        assertTrue(exception.getMessage().contains("fecha"), "El mensaje de la excepción carece de contexto técnico sobre el fallo de fechas.");
+        assertTrue(exception.getMessage().contains("fecha"),
+                "El mensaje de la excepción carece de contexto técnico sobre el fallo de fechas.");
 
-        // Verificación de aislamiento (QA): Garantiza que los repositorios nunca fueron invocados.
+        // Verificación de aislamiento (QA): Garantiza que los repositorios nunca fueron
+        // invocados.
         verify(huespedRepo, never()).findById(any());
         verify(habitacionRepo, never()).findById(any());
         verify(reservaRepo, never()).save(any());
+    }
+
+    @Test
+    void crearReserva_HabitacionSinPrecio_NoGuarda() {
+        ReservaRequestDTO request = new ReservaRequestDTO(
+                1L, 2L, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 3));
+        Habitacion habitacion = new Habitacion();
+        when(huespedRepo.findById(1L)).thenReturn(Optional.of(new Huesped()));
+        when(habitacionRepo.findById(2L)).thenReturn(Optional.of(habitacion));
+
+        assertThrows(ValidacionException.class, () -> reservaService.crearReserva(request));
+        verify(reservaRepo, never()).save(any(Reserva.class));
     }
 }
