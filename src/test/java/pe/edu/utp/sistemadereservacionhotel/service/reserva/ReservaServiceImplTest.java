@@ -54,7 +54,7 @@ class ReservaServiceImplTest {
         Reserva reserva = new Reserva();
         reserva.setCheckIn(new CheckIn()); // Esto simula que la reserva ya inició
 
-        when(repo.findById(idReserva)).thenReturn(Optional.of(reserva));
+        when(repo.lockById(idReserva)).thenReturn(Optional.of(reserva));
 
         // Act & Assert
         assertThrows(ValidacionException.class, () -> reservaService.cancelarReserva(idReserva),
@@ -68,7 +68,7 @@ class ReservaServiceImplTest {
         Reserva reserva = new Reserva();
         reserva.setCheckIn(null); // Sin check-in, es cancelable
 
-        when(repo.findById(idReserva)).thenReturn(Optional.of(reserva));
+        when(repo.lockById(idReserva)).thenReturn(Optional.of(reserva));
 
         EstadoReserva estadoCancelado = new EstadoReserva();
         estadoCancelado.setIdEstado(3L);

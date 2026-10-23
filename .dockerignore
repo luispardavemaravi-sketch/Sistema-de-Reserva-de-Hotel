@@ -1,0 +1,7 @@
+target
+backend
+frontend
+.git
+.idea
+*.log
+.env

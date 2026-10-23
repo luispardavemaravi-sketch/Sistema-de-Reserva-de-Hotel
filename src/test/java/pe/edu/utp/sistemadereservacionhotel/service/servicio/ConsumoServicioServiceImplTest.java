@@ -51,6 +51,9 @@ class ConsumoServicioServiceImplTest {
 
         ConsumoServicio guardado = new ConsumoServicio();
         guardado.setIdConsumo(100L);
+        guardado.setReserva(reserva);
+        guardado.setServicioAdicional(servicio);
+        guardado.setCantidad(2);
         guardado.setSubTotal(new BigDecimal("40.00")); // 2 * 20
         when(consumoRepo.save(any(ConsumoServicio.class))).thenReturn(guardado);
 

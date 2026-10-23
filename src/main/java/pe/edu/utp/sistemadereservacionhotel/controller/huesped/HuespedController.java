@@ -8,6 +8,7 @@ import pe.edu.utp.sistemadereservacionhotel.dto.huesped.HuespedResponseDTO;
 import pe.edu.utp.sistemadereservacionhotel.service.huesped.HuespedService;
 
 import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/huespedes")
@@ -17,7 +18,7 @@ public class HuespedController {
     private final HuespedService service;
 
     @PostMapping
-    public ResponseEntity<HuespedResponseDTO> registrar(@RequestBody HuespedRequestDTO dto) {
+    public ResponseEntity<HuespedResponseDTO> registrar(@Valid @RequestBody HuespedRequestDTO dto) {
         return ResponseEntity.ok(service.registrarHuesped(dto));
     }
 
@@ -42,7 +43,7 @@ public class HuespedController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<HuespedResponseDTO> actualizar(@PathVariable Long id, @RequestBody HuespedRequestDTO dto) {
+    public ResponseEntity<HuespedResponseDTO> actualizar(@PathVariable Long id, @Valid @RequestBody HuespedRequestDTO dto) {
         return ResponseEntity.ok(service.actualizarHuesped(id, dto));
     }
 

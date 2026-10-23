@@ -1,5 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import { computed, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import { RoomRates } from './hotel-admin.store';
 
 export type RoomStatus = 'Disponible' | 'Ocupada' | 'Limpieza' | 'Mantenimiento';
@@ -96,7 +95,6 @@ const seedStay = (
 
 @Injectable({ providedIn: 'root' })
 export class HotelDemoStore {
-  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly rooms = signal<DemoRoom[]>([
     {
       id: 1,
@@ -362,65 +360,6 @@ export class HotelDemoStore {
         .length,
   );
   readonly cashIncome = computed(() => this.receipts().reduce((sum, r) => sum + r.amount, 0));
-  constructor() {
-    if (!this.browser) return;
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem('hotel-parda-operations-v1') || 'null',
-      ) as Record<string, unknown> | null;
-      if (saved) {
-        if (Array.isArray(saved['rooms']))
-          this.rooms.set(
-            (saved['rooms'] as DemoRoom[]).map((room) => ({
-              ...room,
-              type:
-                room.type === 'Superior'
-                  ? 'Matrimonial'
-                  : room.type === 'Suite'
-                    ? 'Suite con Jacuzzi'
-                    : room.type,
-              stay:
-                room.stay ||
-                (room.status === 'Ocupada'
-                  ? seedStay(
-                      room.number === '202' || room.number === '304' ? 'Horas' : 'Noche',
-                      room.number === '202' || room.number === '304' ? 3 : 24,
-                      room.number === '202' ? 15 : 90,
-                      'Efectivo',
-                    )
-                  : undefined),
-            })),
-          );
-        if (Array.isArray(saved['reservations']))
-          this.reservations.set(saved['reservations'] as DemoReservation[]);
-        if (Array.isArray(saved['guests'])) this.guests.set(saved['guests'] as DemoGuest[]);
-        if (Array.isArray(saved['consumptions']))
-          this.consumptions.set(saved['consumptions'] as DemoConsumption[]);
-        if (Array.isArray(saved['employees']))
-          this.employees.set(saved['employees'] as DemoEmployee[]);
-        if (Array.isArray(saved['receipts'])) this.receipts.set(saved['receipts'] as DemoReceipt[]);
-        if (typeof saved['cashOpen'] === 'boolean') this.cashOpen.set(saved['cashOpen']);
-        if (typeof saved['cashInitial'] === 'number') this.cashInitial.set(saved['cashInitial']);
-      }
-    } catch {
-      /* Keep initial data if browser storage is invalid. */
-    }
-    effect(() => {
-      localStorage.setItem(
-        'hotel-parda-operations-v1',
-        JSON.stringify({
-          rooms: this.rooms(),
-          reservations: this.reservations(),
-          guests: this.guests(),
-          consumptions: this.consumptions(),
-          employees: this.employees(),
-          receipts: this.receipts(),
-          cashOpen: this.cashOpen(),
-          cashInitial: this.cashInitial(),
-        }),
-      );
-    });
-  }
   updateRoom(id: number, status: RoomStatus, guest?: string) {
     this.rooms.update((rows) =>
       rows.map((r) =>

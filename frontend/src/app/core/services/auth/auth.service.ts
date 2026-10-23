@@ -3,6 +3,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CargoEmpleado, EmpleadoResponseDTO } from '../../models/personal.model';
 import { HotelAdminStore } from '../../demo/hotel-admin.store';
+import { environment } from '../../../../environments/environment';
 
 export interface LoginCredentials {
   identifier: string;
@@ -16,21 +17,6 @@ export interface AuthSession {
   turnoId: number;
 }
 
-const users = [
-  {
-    identifier: 'admin@hotel.com',
-    password: 'admin123',
-    name: 'Dueño del hotel',
-    role: CargoEmpleado.ADMINISTRADOR,
-  },
-  {
-    identifier: 'recepcion@hotel.com',
-    password: 'recep123',
-    name: 'Recepcionista de turno',
-    role: CargoEmpleado.RECEPCIONISTA,
-  },
-  { identifier: 'caja@hotel.com', password: 'caja123', name: 'Cajero', role: CargoEmpleado.CAJERO },
-];
 const storageKey = 'hotel-parda-auth-v1';
 
 @Injectable({ providedIn: 'root' })
@@ -56,33 +42,16 @@ export class AuthService {
     let session: AuthSession;
     try {
       session = await firstValueFrom(
-        this.http.post<AuthSession>('http://localhost:8080/api/auth/login', {
+        this.http.post<AuthSession>(`${environment.apiUrl}/auth/login`, {
           usuario: identifier,
           password: credentials.password,
           turnoId: credentials.turnoId,
         }),
       );
     } catch (error) {
-      if (!(error instanceof HttpErrorResponse) || ![0, 404, 501, 503].includes(error.status))
-        throw new Error('Usuario o contraseña incorrectos.');
-      const match = users.find(
-        (user) => user.identifier === identifier && user.password === credentials.password,
-      );
-      if (!match) throw new Error('Usuario o contraseña incorrectos.');
-      session = {
-        token: 'local-session',
-        turnoId: credentials.turnoId,
-        user: {
-          id: users.indexOf(match) + 1,
-          nombres: match.name,
-          apellidos: '',
-          numeroDocumento: '',
-          correo: match.identifier,
-          cargo: match.role,
-          activo: true,
-          turnoId: credentials.turnoId,
-        },
-      };
+      if (error instanceof HttpErrorResponse && error.status === 401)
+        throw new Error('Usuario, contraseña o turno incorrectos.');
+      throw new Error('No se pudo conectar con el servidor. Inténtelo de nuevo.');
     }
     if (!session.user?.cargo || !session.token)
       throw new Error('La respuesta de acceso no es válida.');
@@ -90,10 +59,7 @@ export class AuthService {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(storageKey);
       sessionStorage.removeItem(storageKey);
-      (credentials.remember ? localStorage : sessionStorage).setItem(
-        storageKey,
-        JSON.stringify(session),
-      );
+      if (credentials.remember) sessionStorage.setItem(storageKey, JSON.stringify(session));
     }
   }
   logout() {
@@ -114,7 +80,9 @@ export class AuthService {
   private restore(): AuthSession | null {
     if (typeof window === 'undefined') return null;
     try {
-      const raw = sessionStorage.getItem(storageKey) ?? localStorage.getItem(storageKey);
+      localStorage.removeItem('hotel-parda-operations-v1');
+      localStorage.removeItem('hotel-parda-admin-v1');
+      const raw = sessionStorage.getItem(storageKey);
       if (!raw) return null;
       const value = JSON.parse(raw) as AuthSession;
       return value.user?.cargo && value.token ? value : null;

@@ -11,7 +11,7 @@ import { DemoRoom, HotelDemoStore } from '../../core/demo/hotel-demo.store';
   template: ` <section class="page analytics-page">
     <div class="page-head">
       <div>
-        <p class="eyebrow">OPERACIÓN EN VIVO</p>
+        <p class="eyebrow">DATOS DE DEMOSTRACIÓN</p>
         <h1>Resumen general</h1>
         <p>{{ admin.profile().name }} · {{ dateLabel }}</p>
       </div>

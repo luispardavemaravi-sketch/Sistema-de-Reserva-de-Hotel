@@ -1,5 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import { computed, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 import type { DemoRoom } from './hotel-demo.store';
 
 export interface RoomRates {
@@ -73,7 +72,6 @@ const day = (offset: number) => {
 
 @Injectable({ providedIn: 'root' })
 export class HotelAdminStore {
-  private readonly browser = isPlatformBrowser(inject(PLATFORM_ID));
   readonly profile = signal<HotelProfile>({ name: 'Hotel Parda', ruc: '', currency: 'PEN' });
   readonly floors = signal<HotelFloor[]>([
     { id: 1, number: 1, name: 'Piso 1' },
@@ -366,61 +364,6 @@ export class HotelAdminStore {
       .reduce((sum, entry) => sum + entry.amount, 0),
   );
 
-  constructor() {
-    if (!this.browser) return;
-    try {
-      const saved = JSON.parse(localStorage.getItem('hotel-parda-admin-v1') || 'null') as Record<
-        string,
-        unknown
-      > | null;
-      if (saved) {
-        if (this.isProfile(saved['profile'])) this.profile.set(saved['profile']);
-        if (Array.isArray(saved['floors'])) this.floors.set(saved['floors'] as HotelFloor[]);
-        if (Array.isArray(saved['roomTypes']))
-          this.roomTypes.set(saved['roomTypes'] as RoomTypeConfig[]);
-        if (Array.isArray(saved['equipment'])) this.equipment.set(saved['equipment'] as string[]);
-        if (Array.isArray(saved['catalog'])) this.catalog.set(saved['catalog'] as CatalogItem[]);
-        if (Array.isArray(saved['areas'])) this.areas.set(saved['areas'] as string[]);
-        if (Array.isArray(saved['shifts'])) this.shifts.set(saved['shifts'] as ShiftConfig[]);
-        if (Array.isArray(saved['paymentMethods']))
-          this.paymentMethods.set(saved['paymentMethods'] as string[]);
-        if (Array.isArray(saved['promotions']))
-          this.promotions.set(saved['promotions'] as Promotion[]);
-        if (typeof saved['igv'] === 'number') this.igv.set(saved['igv']);
-        if (Array.isArray(saved['ledger'])) this.ledger.set(saved['ledger'] as LedgerEntry[]);
-      }
-    } catch {
-      /* Keep defaults if previous browser data is invalid. */
-    }
-    effect(() => {
-      localStorage.setItem(
-        'hotel-parda-admin-v1',
-        JSON.stringify({
-          profile: this.profile(),
-          floors: this.floors(),
-          roomTypes: this.roomTypes(),
-          equipment: this.equipment(),
-          catalog: this.catalog(),
-          areas: this.areas(),
-          shifts: this.shifts(),
-          paymentMethods: this.paymentMethods(),
-          promotions: this.promotions(),
-          igv: this.igv(),
-          ledger: this.ledger(),
-        }),
-      );
-    });
-  }
-
-  private isProfile(value: unknown): value is HotelProfile {
-    return (
-      typeof value === 'object' &&
-      value !== null &&
-      'name' in value &&
-      'currency' in value &&
-      'ruc' in value
-    );
-  }
   addLedger(entry: Omit<LedgerEntry, 'id' | 'date'> & { date?: string }) {
     const id = Math.max(0, ...this.ledger().map((row) => row.id)) + 1;
     this.ledger.update((rows) => [

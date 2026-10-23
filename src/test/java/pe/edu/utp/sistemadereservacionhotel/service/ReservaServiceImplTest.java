@@ -16,8 +16,10 @@ import pe.edu.utp.sistemadereservacionhotel.repository.reserva.ReservaRepository
 import pe.edu.utp.sistemadereservacionhotel.repository.habitacion.HabitacionRepository;
 import pe.edu.utp.sistemadereservacionhotel.repository.huesped.HuespedRepository;
 import pe.edu.utp.sistemadereservacionhotel.service.reserva.impl.ReservaServiceImpl;
+import pe.edu.utp.sistemadereservacionhotel.service.patron.exception.ValidacionException;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -68,7 +70,10 @@ class ReservaServiceImplTest {
 
         Habitacion habitacionMock = new Habitacion();
         habitacionMock.setIdHabitacion(2L);
-        when(habitacionRepo.findById(2L)).thenReturn(Optional.of(habitacionMock));
+        habitacionMock.setEstadoActivo(true);
+        habitacionMock.setPrecioActual(BigDecimal.valueOf(35));
+        when(habitacionRepo.lockById(2L)).thenReturn(Optional.of(habitacionMock));
+        when(reservaRepo.countConflicts(eq(2L), any(), any(), isNull())).thenReturn(0L);
 
         EstadoReserva estadoMock = new EstadoReserva();
         estadoMock.setIdEstado(1L);
@@ -113,11 +118,34 @@ class ReservaServiceImplTest {
             reservaService.crearReserva(requestInvalido);
         }, "El sistema debe lanzar IllegalArgumentException al detectar fechas invertidas.");
 
-        assertTrue(exception.getMessage().contains("fecha"), "El mensaje de la excepción carece de contexto técnico sobre el fallo de fechas.");
+        assertTrue(exception.getMessage().contains("entrada"), "El mensaje debe identificar el rango inválido.");
 
         // Verificación de aislamiento (QA): Garantiza que los repositorios nunca fueron invocados.
         verify(huespedRepo, never()).findById(any());
         verify(habitacionRepo, never()).findById(any());
         verify(reservaRepo, never()).save(any());
+    }
+
+    @Test
+    void crearReserva_ConSolapamiento_NoGuarda() {
+        LocalDate entrada = LocalDate.of(2026, 11, 10);
+        LocalDate salida = LocalDate.of(2026, 11, 12);
+        var request = new ReservaRequestDTO(1L, 2L, entrada, salida);
+        var habitacion = new Habitacion();
+        habitacion.setEstadoActivo(true);
+        when(huespedRepo.findById(1L)).thenReturn(Optional.of(new Huesped()));
+        when(habitacionRepo.lockById(2L)).thenReturn(Optional.of(habitacion));
+        when(reservaRepo.countConflicts(2L, entrada, salida, null)).thenReturn(1L);
+
+        assertThrows(ValidacionException.class, () -> reservaService.crearReserva(request));
+        verify(reservaRepo, never()).save(any());
+    }
+
+    @Test
+    void crearReserva_FechasIguales_NoConsultaBaseDeDatos() {
+        LocalDate fecha = LocalDate.of(2026, 11, 10);
+        assertThrows(IllegalArgumentException.class,
+                () -> reservaService.crearReserva(new ReservaRequestDTO(1L, 2L, fecha, fecha)));
+        verifyNoInteractions(huespedRepo, habitacionRepo, reservaRepo);
     }
 }

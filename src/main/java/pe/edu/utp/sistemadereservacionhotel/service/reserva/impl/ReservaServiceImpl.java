@@ -29,22 +29,31 @@ public class ReservaServiceImpl implements ReservaService {
     private final HuespedRepository huespedRepo;
     private final HabitacionRepository habitacionRepo;
     private final EstadoReservaRepository estadoRepo;
+    private final CheckInRepository checkInRepo;
+    private final CheckOutRepository checkOutRepo;
     private static final String ENTIDAD = "Reserva";
 
     @Override
     @Transactional
     public ReservaResponseDTO crearReserva(ReservaRequestDTO dto) {
         // 1. FAIL-FAST: Validación en memoria antes de golpear la base de datos
-        if (dto.fechaSalidaPlanificada().isBefore(dto.fechaEntradaPlanificada())) {
-            throw new IllegalArgumentException("La fecha de salida planificada no puede ser anterior a la entrada.");
+        if (dto.fechaEntradaPlanificada() == null || dto.fechaSalidaPlanificada() == null ||
+                !dto.fechaSalidaPlanificada().isAfter(dto.fechaEntradaPlanificada())) {
+            throw new IllegalArgumentException("La salida debe ser posterior a la entrada.");
         }
 
         // 2. Ejecución de I/O solo con datos válidos
         var huesped = huespedRepo.findById(dto.idHuesped())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Huesped", dto.idHuesped()));
 
-        var habitacion = habitacionRepo.findById(dto.idHabitacion())
+        var habitacion = habitacionRepo.lockById(dto.idHabitacion())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", dto.idHabitacion()));
+        if (!habitacion.isEstadoActivo() || (habitacion.getEstadoHabitacion() != null &&
+                Boolean.FALSE.equals(habitacion.getEstadoHabitacion().getEsReservable())) ||
+                repo.countConflicts(dto.idHabitacion(),
+                dto.fechaEntradaPlanificada(), dto.fechaSalidaPlanificada(), null) > 0) {
+            throw new ValidacionException("La habitación no está disponible para ese rango de fechas.");
+        }
 
         // 3. Construcción del objeto
         Reserva reserva = new Reserva();
@@ -74,11 +83,33 @@ public class ReservaServiceImpl implements ReservaService {
     @Override
     @Transactional
     public ReservaResponseDTO actualizarReserva(Long id, ReservaRequestDTO dto) {
-        Reserva existente = repo.findById(id)
+        Reserva existente = repo.lockById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
 
+        if (dto.fechaEntradaPlanificada() == null || dto.fechaSalidaPlanificada() == null ||
+                !dto.fechaSalidaPlanificada().isAfter(dto.fechaEntradaPlanificada())) {
+            throw new IllegalArgumentException("La salida debe ser posterior a la entrada.");
+        }
+        if (existente.getCheckIn() != null ||
+                java.util.Set.of("cancelada", "finalizada").contains(existente.getEstadoReserva().getNombreEstado().toLowerCase())) {
+            throw new ValidacionException("La reserva ya no puede modificarse.");
+        }
+        var habitacion = habitacionRepo.lockById(dto.idHabitacion())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", dto.idHabitacion()));
+        if (!habitacion.isEstadoActivo() || (habitacion.getEstadoHabitacion() != null &&
+                Boolean.FALSE.equals(habitacion.getEstadoHabitacion().getEsReservable())) ||
+                repo.countConflicts(dto.idHabitacion(),
+                dto.fechaEntradaPlanificada(), dto.fechaSalidaPlanificada(), id) > 0) {
+            throw new ValidacionException("La habitación no está disponible para ese rango de fechas.");
+        }
+
+        existente.setHabitacion(habitacion);
+        existente.setHuesped(huespedRepo.findById(dto.idHuesped())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Huesped", dto.idHuesped())));
         existente.setFechaEntradaPlanificada(dto.fechaEntradaPlanificada());
         existente.setFechaSalidaPlanificada(dto.fechaSalidaPlanificada());
+        long noches = ChronoUnit.DAYS.between(dto.fechaEntradaPlanificada(), dto.fechaSalidaPlanificada());
+        existente.setMontoTotalEstimado(habitacion.getPrecioActual().multiply(BigDecimal.valueOf(noches)));
 
         return mapearADto(repo.save(existente));
     }
@@ -86,15 +117,58 @@ public class ReservaServiceImpl implements ReservaService {
     @Override
     @Transactional
     public void cancelarReserva(Long id) {
-        Reserva reserva = repo.findById(id)
+        Reserva reserva = repo.lockById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
 
-        if (reserva.getCheckIn() != null) {
+        if (reserva.getCheckIn() != null || (reserva.getEstadoReserva() != null &&
+                java.util.Set.of("Cancelada", "Finalizada", "En curso").contains(reserva.getEstadoReserva().getNombreEstado()))) {
             throw new ValidacionException("No se puede cancelar una reserva que ya inició.");
         }
 
         reserva.setEstadoReserva(estadoRepo.findById(3L).orElseThrow());
         repo.save(reserva);
+    }
+
+    @Override
+    @Transactional
+    public ReservaResponseDTO confirmar(Long id) {
+        Reserva reserva = repo.lockById(id).orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
+        requireState(reserva, "Pendiente");
+        reserva.setEstadoReserva(estadoRepo.findByNombreEstado("Confirmada").orElseThrow());
+        return mapearADto(repo.save(reserva));
+    }
+
+    @Override
+    @Transactional
+    public ReservaResponseDTO registrarEntrada(Long id) {
+        Reserva reserva = repo.lockById(id).orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
+        requireState(reserva, "Confirmada");
+        var evento = new pe.edu.utp.sistemadereservacionhotel.model.reserva.CheckIn();
+        evento.setReserva(reserva);
+        evento.setFechaHoraRealEntrada(LocalDateTime.now(ZoneId.of("America/Lima")));
+        checkInRepo.save(evento);
+        reserva.setEstadoReserva(estadoRepo.findByNombreEstado("En curso").orElseThrow());
+        return mapearADto(repo.save(reserva));
+    }
+
+    @Override
+    @Transactional
+    public ReservaResponseDTO registrarSalida(Long id) {
+        Reserva reserva = repo.lockById(id).orElseThrow(() -> new RecursoNoEncontradoException(ENTIDAD, id));
+        requireState(reserva, "En curso");
+        var evento = new pe.edu.utp.sistemadereservacionhotel.model.reserva.CheckOut();
+        evento.setReserva(reserva);
+        evento.setFechaHoraRealSalida(LocalDateTime.now(ZoneId.of("America/Lima")));
+        evento.setMultaPorRetraso(BigDecimal.ZERO);
+        checkOutRepo.save(evento);
+        reserva.setEstadoReserva(estadoRepo.findByNombreEstado("Finalizada").orElseThrow());
+        return mapearADto(repo.save(reserva));
+    }
+
+    private void requireState(Reserva reserva, String expected) {
+        if (!expected.equals(reserva.getEstadoReserva().getNombreEstado())) {
+            throw new ValidacionException("La reserva debe estar en estado " + expected + ".");
+        }
     }
 
     @Override

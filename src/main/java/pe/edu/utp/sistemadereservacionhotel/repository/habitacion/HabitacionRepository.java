@@ -1,6 +1,10 @@
 package pe.edu.utp.sistemadereservacionhotel.repository.habitacion;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import pe.edu.utp.sistemadereservacionhotel.model.habitacion.Habitacion;
 
@@ -13,6 +17,9 @@ import java.util.Optional;
  */
 @Repository
 public interface HabitacionRepository extends JpaRepository<Habitacion, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select h from Habitacion h where h.idHabitacion = :id")
+    Optional<Habitacion> lockById(@Param("id") Long id);
 
     /**
      * Localiza una habitación por su identificador alfanumérico visible.

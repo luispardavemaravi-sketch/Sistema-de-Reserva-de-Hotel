@@ -1,0 +1,7 @@
+{
+  "framework": "angular",
+  "outputDirectory": "dist/hotel-admin-frontend/browser",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

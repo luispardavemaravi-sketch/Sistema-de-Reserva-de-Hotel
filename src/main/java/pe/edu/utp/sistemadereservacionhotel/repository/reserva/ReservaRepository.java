@@ -1,6 +1,10 @@
 package pe.edu.utp.sistemadereservacionhotel.repository.reserva;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
 import org.springframework.stereotype.Repository;
 import pe.edu.utp.sistemadereservacionhotel.model.reserva.Reserva;
 
@@ -13,6 +17,10 @@ import java.util.Optional;
  */
 @Repository
 public interface ReservaRepository extends JpaRepository<Reserva, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from Reserva r where r.idReserva = :id")
+    Optional<Reserva> lockById(@Param("id") Long id);
 
     /**
      * Búsqueda exacta del contrato mediante su localizador (Business Key).
@@ -49,6 +57,17 @@ public interface ReservaRepository extends JpaRepository<Reserva, Long> {
      * Indispensable para validar disponibilidad e impedir overbooking de la misma habitación.
      */
     List<Reserva> findByHabitacion_IdHabitacion(Long idHabitacion);
+
+    /** Active reservations intersecting the half-open interval [entrada, salida). */
+    @org.springframework.data.jpa.repository.Query("""
+            select count(r) from Reserva r
+            where r.habitacion.idHabitacion = :habitacionId
+              and r.fechaEntradaPlanificada < :salida
+              and r.fechaSalidaPlanificada > :entrada
+              and lower(r.estadoReserva.nombreEstado) not in ('cancelada', 'finalizada')
+              and (:excludeId is null or r.idReserva <> :excludeId)
+            """)
+    long countConflicts(Long habitacionId, LocalDate entrada, LocalDate salida, Long excludeId);
 
     /**
      * CAMBIO CRÍTICO: Consulta el cruce temporal de ocupación para un recurso físico específico.

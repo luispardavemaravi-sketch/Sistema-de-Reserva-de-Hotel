@@ -1,8 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HotelAdminStore } from '../../core/demo/hotel-admin.store';
-import { DemoReservation, HotelDemoStore } from '../../core/demo/hotel-demo.store';
+import { DemoReservation, DemoRoom, HotelDemoStore } from '../../core/demo/hotel-demo.store';
 import { ModalFocusDirective } from '../../shared/components/modal-focus.directive';
+import { firstValueFrom } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { BackendGuest, BackendReservation, BackendRoom, ReservaBackendService } from '../../core/services/reserva/reserva-backend.service';
 
 type ReservationDialog = 'form' | 'companions' | 'extras' | 'delete' | null;
 
@@ -109,6 +112,10 @@ type ReservationDialog = 'form' | 'companions' | 'extras' | 'delete' | null;
 export class ReservasComponent {
   readonly store = inject(HotelDemoStore);
   readonly admin = inject(HotelAdminStore);
+  private readonly api = inject(ReservaBackendService);
+  private backendRooms: BackendRoom[] = [];
+  private backendGuests: BackendGuest[] = [];
+  readonly loading = signal(true);
   private readonly fb = inject(FormBuilder);
   readonly tabs = ['Todas', 'Pendiente', 'Confirmada', 'En curso', 'Finalizada', 'Cancelada'];
   readonly filter = signal('Todas');
@@ -119,6 +126,57 @@ export class ReservasComponent {
     () => this.store.reservations().find((row) => row.id === this.selectedId()) || null,
   );
   readonly error = signal('');
+  constructor() { void this.refresh(); }
+
+  private async refresh() {
+    this.loading.set(true);
+    this.store.reservations.set([]);
+    this.store.rooms.set([]);
+    this.store.guests.set([]);
+    try {
+      const [rooms, guests, reservations] = await Promise.all([
+        firstValueFrom(this.api.rooms()), firstValueFrom(this.api.guests()),
+        firstValueFrom(this.api.reservations()),
+      ]);
+      this.backendRooms = rooms;
+      this.backendGuests = guests;
+      this.store.rooms.set(rooms.map((room) => ({
+        id: room.id, number: room.numeroHabitacion, floor: 1,
+        type: room.tipoHabitacion || 'Estándar',
+        status: (!room.activo ? 'Mantenimiento' :
+          reservations.some((row) => row.idHabitacion === room.id && row.estadoReserva === 'En curso')
+            ? 'Ocupada' : 'Disponible') as DemoRoom['status'],
+        rate: Number(room.precioActual),
+      })));
+      this.store.guests.set(guests.map((guest) => ({
+        id: guest.idHuesped, name: `${guest.nombre} ${guest.apellidos}`.trim(),
+        document: guest.documentoIdentidad, phone: guest.telefono,
+        email: guest.email, stays: 0,
+      })));
+      this.store.reservations.set(reservations.map((row) => this.toView(row)));
+      this.error.set('');
+    } catch (error) {
+      this.error.set(this.apiError(error));
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private toView(row: BackendReservation): DemoReservation {
+    const room = this.backendRooms.find((item) => item.id === row.idHabitacion);
+    const guest = this.backendGuests.find((item) => item.idHuesped === row.idHuesped);
+    return { id: row.idReserva, code: row.codigoReserva,
+      guest: guest ? `${guest.nombre} ${guest.apellidos}`.trim() : `Huésped #${row.idHuesped}`,
+      room: room?.numeroHabitacion ?? `#${row.idHabitacion}`,
+      from: row.fechaEntradaPlanificada, to: row.fechaSalidaPlanificada,
+      status: row.estadoReserva, extras: [], total: Number(row.montoTotalEstimado), mode: 'Noche' };
+  }
+
+  private apiError(error: unknown): string {
+    if (error instanceof HttpErrorResponse)
+      return error.error?.detail || `No se pudo guardar o cargar la reserva (${error.status}).`;
+    return 'No se pudo conectar con el servidor.';
+  }
   readonly form = this.fb.nonNullable.group({
     guest: ['', Validators.required],
     room: ['', Validators.required],
@@ -149,6 +207,17 @@ export class ReservasComponent {
           `${row.guest} ${row.code} ${row.room}`.toLowerCase().includes(this.query().toLowerCase()),
       ),
   );
+  availableRooms() {
+    const start = this.form.controls.startDate.value;
+    const end = this.form.controls.endDate.value;
+    return this.store.rooms().filter((room) => {
+      if (room.status === 'Mantenimiento') return false;
+      if (!start || !end || end <= start) return true;
+      return !this.store.reservations().some((row) => row.id !== this.selectedId() &&
+        row.room === room.number && row.status !== 'Cancelada' &&
+        row.status !== 'Finalizada' && row.from < end && row.to > start);
+    });
+  }
   readonly activeCount = computed(
     () =>
       this.store
@@ -225,12 +294,20 @@ export class ReservasComponent {
     const v = this.form.getRawValue();
     return this.roomPrice() + (v.breakfast ? 28 : 0) + (v.parking ? 30 : 0) + (v.spa ? 130 : 0);
   }
-  save() {
+  async save() {
     if (this.form.invalid) {
       this.error.set('Complete huésped, habitación y fecha.');
       return;
     }
     const v = this.form.getRawValue();
+    if (v.mode === 'Horas') {
+      this.error.set('Las reservas por horas aún no están disponibles en la API.');
+      return;
+    }
+    if (v.breakfast || v.parking || v.spa) {
+      this.error.set('Los extras aún no están disponibles para reservas en la API.');
+      return;
+    }
     if (v.mode === 'Noche' && v.endDate <= v.startDate) {
       this.error.set('La salida debe ser posterior a la entrada.');
       return;
@@ -240,89 +317,32 @@ export class ReservasComponent {
       this.error.set('Revise la fecha y hora de entrada.');
       return;
     }
-    const end =
-      v.mode === 'Horas'
-        ? new Date(start.getTime() + v.durationHours * 3_600_000)
-        : new Date(`${v.endDate}T${v.startTime}:00`);
     const id = this.selectedId();
-    const current = this.selected();
-    const extras = [v.breakfast && 'Desayuno', v.parking && 'Cochera', v.spa && 'Spa'].filter(
-      (item): item is string => typeof item === 'string',
-    );
-    const record: DemoReservation = {
-      id: id ?? Math.max(0, ...this.store.reservations().map((row) => row.id)) + 1,
-      code:
-        current?.code ||
-        `RS-${new Date().getFullYear()}-${String(this.store.reservations().length + 41).padStart(3, '0')}`,
-      guest: v.guest,
-      room: v.room,
-      from: v.startDate,
-      to: end.toISOString().slice(0, 10),
-      status: current?.status || 'Pendiente',
-      mode: v.mode as 'Horas' | 'Noche',
-      durationHours:
-        v.mode === 'Horas'
-          ? v.durationHours
-          : Math.round((end.getTime() - start.getTime()) / 3_600_000),
-      startAt: start.toISOString(),
-      endAt: end.toISOString(),
-      extras,
-      total: this.estimatedTotal(),
-      companion: current?.companion,
-      companions: current?.companions,
-    };
-    this.store.reservations.update((rows) =>
-      id === null ? [record, ...rows] : rows.map((row) => (row.id === id ? record : row)),
-    );
-    this.dialog.set(null);
-  }
-  confirm(row: DemoReservation) {
-    this.store.updateReservation(row.id, 'Confirmada');
-  }
-  checkIn(row: DemoReservation) {
-    const room = this.store.rooms().find((item) => item.number === row.room);
-    if (!room || room.status !== 'Disponible') {
-      this.error.set('La habitación no está disponible para el check-in.');
+    const guestId = this.store.guests().find((guest) => guest.name === v.guest)?.id;
+    const roomId = this.store.rooms().find((room) => room.number === v.room)?.id;
+    if (!guestId || !roomId) {
+      this.error.set('Seleccione un huésped y una habitación existentes.');
       return;
     }
-    const startedAt = new Date();
-    const durationHours = row.durationHours || 24;
-    const endsAt = new Date(startedAt.getTime() + durationHours * 3_600_000);
-    this.store.startStay(room.id, row.guest, {
-      mode: row.mode || 'Noche',
-      durationHours,
-      startedAt: startedAt.toISOString(),
-      endsAt: endsAt.toISOString(),
-      paymentMethod: this.admin.paymentMethods()[0] || 'Efectivo',
-    });
-    this.store.reservations.update((rows) =>
-      rows.map((item) =>
-        item.id === row.id
-          ? {
-              ...item,
-              status: 'En curso',
-              startAt: startedAt.toISOString(),
-              endAt: endsAt.toISOString(),
-            }
-          : item,
-      ),
-    );
-    this.admin.addLedger({
-      description: `Reserva ${row.code} · habitación ${room.number}`,
-      kind: 'Alojamiento',
-      amount: row.total,
-      method: this.admin.paymentMethods()[0] || 'Efectivo',
-      room: room.number,
-      roomType: room.type,
-      stayMode: row.mode || 'Noche',
-      sourceId: row.id,
-    });
-    this.error.set('');
+    try {
+      const body = { idHuesped: guestId, idHabitacion: roomId,
+        fechaEntradaPlanificada: v.startDate, fechaSalidaPlanificada: v.endDate };
+      await firstValueFrom(id === null ? this.api.create(body) : this.api.update(id, body));
+      this.dialog.set(null);
+      await this.refresh();
+    } catch (error) { this.error.set(this.apiError(error)); }
   }
-  checkOut(row: DemoReservation) {
-    const room = this.store.rooms().find((item) => item.number === row.room);
-    if (room) this.store.finishStay(room.id);
-    this.store.updateReservation(row.id, 'Finalizada');
+  async confirm(row: DemoReservation) {
+    try { await firstValueFrom(this.api.transition(row.id, 'confirmacion')); await this.refresh(); }
+    catch (error) { this.error.set(this.apiError(error)); }
+  }
+  async checkIn(row: DemoReservation) {
+    try { await firstValueFrom(this.api.transition(row.id, 'entrada')); await this.refresh(); }
+    catch (error) { this.error.set(this.apiError(error)); }
+  }
+  async checkOut(row: DemoReservation) {
+    try { await firstValueFrom(this.api.transition(row.id, 'salida')); await this.refresh(); }
+    catch (error) { this.error.set(this.apiError(error)); }
   }
   openCompanions(row: DemoReservation) {
     this.selectedId.set(row.id);
@@ -334,36 +354,10 @@ export class ReservasComponent {
     return row.companions || (row.companion ? [row.companion] : []);
   }
   addCompanion() {
-    const row = this.selected();
-    if (!row || this.companionForm.invalid) {
-      this.error.set('Complete nombre y documento del acompañante.');
-      return;
-    }
-    const value = this.companionForm.getRawValue();
-    this.store.reservations.update((rows) =>
-      rows.map((item) =>
-        item.id === row.id
-          ? { ...item, companion: undefined, companions: [...this.companions(item), value] }
-          : item,
-      ),
-    );
-    this.companionForm.reset();
-    this.error.set('');
+    this.error.set('Los acompañantes aún no están disponibles en la API.');
   }
-  removeCompanion(index: number) {
-    const row = this.selected();
-    if (!row) return;
-    this.store.reservations.update((rows) =>
-      rows.map((item) =>
-        item.id === row.id
-          ? {
-              ...item,
-              companion: undefined,
-              companions: this.companions(item).filter((_, i) => i !== index),
-            }
-          : item,
-      ),
-    );
+  removeCompanion(_index: number) {
+    this.error.set('Los acompañantes aún no están disponibles en la API.');
   }
   openExtras(row: DemoReservation) {
     this.selectedId.set(row.id);
@@ -372,60 +366,20 @@ export class ReservasComponent {
     this.error.set('');
   }
   addExtra() {
-    const row = this.selected();
-    const v = this.extraForm.getRawValue();
-    const item = this.admin.catalog().find((entry) => entry.id === v.itemId);
-    if (!row || !item || v.quantity < 1) {
-      this.error.set('Seleccione un producto o servicio.');
-      return;
-    }
-    const amount = item.price * v.quantity;
-    this.store.reservations.update((rows) =>
-      rows.map((entry) =>
-        entry.id === row.id
-          ? { ...entry, extras: [...entry.extras, item.name], total: entry.total + amount }
-          : entry,
-      ),
-    );
-    const id = Math.max(0, ...this.store.consumptions().map((entry) => entry.id)) + 1;
-    this.store.consumptions.update((rows) => [
-      {
-        id,
-        room: row.room,
-        service: item.name,
-        quantity: v.quantity,
-        amount,
-        time: new Intl.DateTimeFormat('es-PE', { hour: '2-digit', minute: '2-digit' }).format(
-          new Date(),
-        ),
-      },
-      ...rows,
-    ]);
-    this.admin.addLedger({
-      description: `${item.name} · reserva ${row.code}`,
-      kind: 'Consumo',
-      amount,
-      method: 'Efectivo',
-      room: row.room,
-      sourceId: id,
-    });
-    this.dialog.set(null);
+    this.error.set('Los extras aún no están disponibles en la API.');
   }
   askDelete(row: DemoReservation) {
     this.selectedId.set(row.id);
     this.dialog.set('delete');
   }
-  deleteSelected() {
+  async deleteSelected() {
     const row = this.selected();
     if (!row) return;
-    if (row.status === 'En curso') {
-      const room = this.store.rooms().find((item) => item.number === row.room);
-      if (room) this.store.finishStay(room.id);
-    }
-    this.store.reservations.update((rows) => rows.filter((item) => item.id !== row.id));
-    this.dialog.set(null);
+    try { await firstValueFrom(this.api.cancel(row.id)); this.dialog.set(null); await this.refresh(); }
+    catch (error) { this.error.set(this.apiError(error)); }
   }
-  cancel(row: DemoReservation) {
-    this.store.updateReservation(row.id, 'Cancelada');
+  async cancel(row: DemoReservation) {
+    try { await firstValueFrom(this.api.cancel(row.id)); await this.refresh(); }
+    catch (error) { this.error.set(this.apiError(error)); }
   }
 }

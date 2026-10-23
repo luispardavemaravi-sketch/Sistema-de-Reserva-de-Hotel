@@ -1,12 +1,19 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DemoGuest, HotelDemoStore } from '../../core/demo/hotel-demo.store';
+import { HuespedService } from '../../core/services/huesped/huesped.service';
+import { HuespedResponseDTO } from '../../core/models/huesped.model';
+import { ReservaBackendService } from '../../core/services/reserva/reserva-backend.service';
+import { firstValueFrom } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ModalFocusDirective } from '../../shared/components/modal-focus.directive';
 
 @Component({
   selector: 'app-huespedes',
   imports: [ReactiveFormsModule, ModalFocusDirective],
   template: ` <section class="page">
+    @if (loading()) { <p role="status">Cargando huéspedes…</p> }
+    @if (error() && !dialogOpen()) { <p class="error" role="alert">{{ error() }}</p> }
     <div class="page-head">
       <div>
         <h1>Huéspedes</h1>
@@ -135,12 +142,40 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
 })
 export class HuespedesComponent {
   readonly store = inject(HotelDemoStore);
+  private readonly api = inject(HuespedService);
+  private readonly reservasApi = inject(ReservaBackendService);
   private readonly fb = inject(FormBuilder);
   readonly query = signal('');
   readonly dialogOpen = signal(false);
   readonly editing = signal<DemoGuest | null>(null);
   readonly deleting = signal<DemoGuest | null>(null);
   readonly error = signal('');
+  readonly loading = signal(true);
+  constructor() { void this.refresh(); }
+  private toView(guest: HuespedResponseDTO): DemoGuest {
+    return { id: guest.idHuesped, name: `${guest.nombre} ${guest.apellidos}`.trim(),
+      document: guest.documentoIdentidad, phone: guest.telefono || '',
+      email: guest.email, stays: 0 };
+  }
+  private async refresh() {
+    this.loading.set(true);
+    this.store.guests.set([]);
+    try {
+      const [guests, reservations] = await Promise.all([
+        firstValueFrom(this.api.getAll()), firstValueFrom(this.reservasApi.reservations()),
+      ]);
+      this.store.guests.set(guests.map((guest) => ({ ...this.toView(guest),
+        stays: reservations.filter((row) => row.idHuesped === guest.idHuesped &&
+          (row.estadoReserva === 'En curso' || row.estadoReserva === 'Finalizada')).length })));
+      this.error.set('');
+    } catch (error) { this.error.set(this.apiError(error)); }
+    finally { this.loading.set(false); }
+  }
+  private apiError(error: unknown): string {
+    if (error instanceof HttpErrorResponse)
+      return error.error?.detail || `No se pudo completar la operación (${error.status}).`;
+    return 'No se pudo conectar con el servidor.';
+  }
   readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     document: ['', Validators.required],
@@ -175,27 +210,31 @@ export class HuespedesComponent {
   askDelete(guest: DemoGuest) {
     this.deleting.set(guest);
   }
-  save() {
+  async save() {
     if (this.form.invalid) {
       this.error.set('Complete los campos y escriba un correo válido.');
       return;
     }
     const value = this.form.getRawValue();
     const editing = this.editing();
-    if (editing) {
-      this.store.guests.update((rows) =>
-        rows.map((g) => (g.id === editing.id ? { ...g, ...value } : g)),
-      );
-    } else {
-      this.store.guests.update((rows) => [
-        ...rows,
-        { id: Math.max(...rows.map((g) => g.id)) + 1, ...value, stays: 0 },
-      ]);
+    const parts = value.name.trim().split(/\s+/);
+    if (parts.length < 2) {
+      this.error.set('Escriba nombre y apellido del huésped.');
+      return;
     }
-    this.dialogOpen.set(false);
+    const body = { nombre: parts.slice(0, -1).join(' '), apellidos: parts.at(-1)!,
+      documentoIdentidad: value.document, email: value.email, telefono: value.phone };
+    try {
+      await firstValueFrom(editing ? this.api.update(editing.id, body) : this.api.create(body));
+      this.dialogOpen.set(false);
+      await this.refresh();
+    } catch (error) { this.error.set(this.apiError(error)); }
   }
-  deleteGuest(guest: DemoGuest) {
-    this.store.guests.update((rows) => rows.filter((g) => g.id !== guest.id));
-    this.deleting.set(null);
+  async deleteGuest(guest: DemoGuest) {
+    try {
+      await firstValueFrom(this.api.delete(guest.id));
+      this.deleting.set(null);
+      await this.refresh();
+    } catch (error) { this.error.set(this.apiError(error)); }
   }
 }

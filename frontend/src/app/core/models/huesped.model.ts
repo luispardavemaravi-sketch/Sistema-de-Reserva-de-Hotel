@@ -1,14 +1,12 @@
 export interface HuespedRequestDTO {
-  nombres: string;
+  nombre: string;
   apellidos: string;
-  tipoDocumento: string;
-  numeroDocumento: string;
-  correo?: string;
-  telefono?: string;
-  nacionalidad?: string;
-  direccion?: string;
+  documentoIdentidad: string;
+  email: string;
+  telefono: string;
 }
+
 export interface HuespedResponseDTO extends HuespedRequestDTO {
-  id: number;
-  fechaRegistro?: string;
+  idHuesped: number;
+  estadoActivo: boolean;
 }

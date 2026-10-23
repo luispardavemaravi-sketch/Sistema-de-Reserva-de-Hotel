@@ -26,6 +26,10 @@ public interface ReservaService {
      */
     void cancelarReserva(Long id);
 
+    ReservaResponseDTO confirmar(Long id);
+    ReservaResponseDTO registrarEntrada(Long id);
+    ReservaResponseDTO registrarSalida(Long id);
+
     List<ReservaResponseDTO> listarTodas();
 
     ReservaResponseDTO buscarPorId(Long id);

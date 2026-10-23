@@ -119,7 +119,7 @@ import { ThemeService } from '../../core/services/theme.service';
               </div></label
             >
             <label class="remember"
-              ><input type="checkbox" formControlName="remember" /> Recordar sesión en este equipo
+              ><input type="checkbox" formControlName="remember" /> Mantener sesión al recargar esta pestaña
               de recepción</label
             >
             @if (error()) {

@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "node scripts/write-env.mjs && ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
@@ -32,5 +32,8 @@
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
     "vitest": "^5.0.0"
+  },
+  "overrides": {
+    "vite": "8.3.5"
   }
 }
