@@ -1,0 +1,547 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Habitaciones</h1>
+      <p>Configure cada espacio, sus tarifas y el inventario del hotel.</p>
+    </div>
+    <button class="btn btn-primary" type="button" (click)="openCreateRoom()">
+      <i class="pi pi-plus" aria-hidden="true"></i> Nueva habitación
+    </button>
+  </div>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Habitaciones</div>
+      <div class="metric-value">{{ store.rooms().length }}</div>
+      <div class="metric-note">Inventario configurado</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Disponibles</div>
+      <div class="metric-value">{{ store.available() }}</div>
+      <div class="metric-note">Listas para ingreso</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Pisos</div>
+      <div class="metric-value">{{ admin.floors().length }}</div>
+      <div class="metric-note">Distribución actual</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Tipos</div>
+      <div class="metric-value">{{ admin.roomTypes().length }}</div>
+      <div class="metric-note">Categorías de tarifa</div>
+    </div>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Configuración de habitaciones">
+    @for (tab of tabs; track tab) {
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="activeTab() === tab"
+        [attr.aria-selected]="activeTab() === tab"
+        (click)="activeTab.set(tab)"
+      >
+        {{ tab }}
+      </button>
+    }
+  </div>
+  @if (error() && !dialog()) {
+    <p class="notice" role="alert">{{ error() }}</p>
+  }
+  @if (activeTab() === 'Habitaciones') {
+    <div class="tab-panel">
+      <div class="filter-row">
+        <input
+          class="field search"
+          type="search"
+          aria-label="Buscar habitación"
+          placeholder="Buscar número, piso o tipo"
+          (input)="setQuery($event)"
+        /><span class="small muted">{{ visibleRooms().length }} habitaciones</span>
+      </div>
+      <div class="card table-wrap">
+        <table class="data-table room-table">
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Piso</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th>Tarifas</th>
+              <th class="num">Cap.</th>
+              <th>Equipamiento</th>
+              <th>Notas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (room of visibleRooms(); track room.id) {
+              <tr>
+                <td>
+                  <strong>{{ room.number }}</strong>
+                </td>
+                <td>{{ room.floor }}</td>
+                <td>{{ room.type }}</td>
+                <td>
+                  <span [class]="statusClass(room.status)">{{ room.status }}</span>
+                </td>
+                <td class="rate-line">
+                  <strong>3h {{ admin.currencySymbol() }}{{ rates(room).hours3 }}</strong> · 6h
+                  {{ admin.currencySymbol() }}{{ rates(room).hours6 }}<br />Noche
+                  {{ admin.currencySymbol() }}{{ rates(room).night24 }} · Extra
+                  {{ admin.currencySymbol() }}{{ rates(room).extraHour }}
+                </td>
+                <td class="num">{{ room.capacity || 2 }}</td>
+                <td>{{ room.equipment?.join(', ') || '—' }}</td>
+                <td class="notes">{{ room.notes || '—' }}</td>
+                <td>
+                  <div class="actions">
+                    <button class="btn" (click)="openEditRoom(room)">Editar todo</button
+                    ><button class="btn" (click)="duplicateRoom(room)">Duplicar</button
+                    ><button class="btn" (click)="openStatus(room)">Estado</button
+                    ><button
+                      class="btn btn-danger"
+                      (click)="askDelete('room', room.id, room.number)"
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty">
+                  Aún no hay habitaciones. Cree la primera para empezar.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+  @if (activeTab() === 'Pisos') {
+    <div class="tab-panel">
+      <div class="toolbar">
+        <span class="muted small">Agregue pisos según crezca el establecimiento.</span
+        ><button class="btn btn-primary" (click)="openConfig('floor')">+ Crear nuevo piso</button>
+      </div>
+      <div class="config-grid">
+        @for (floor of admin.floors(); track floor.id) {
+          <div class="card config-card">
+            <h3>{{ floor.name }}</h3>
+            <div class="split-line">
+              <span>Número</span><strong>{{ floor.number }}</strong>
+            </div>
+            <div class="split-line">
+              <span>Habitaciones</span><strong>{{ roomCountForFloor(floor.number) }}</strong>
+            </div>
+            <div class="actions">
+              <button class="btn" (click)="openConfig('floor', floor.id)">Editar</button
+              ><button class="btn btn-danger" (click)="askDelete('floor', floor.id, floor.name)">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+  @if (activeTab() === 'Tipos' || activeTab() === 'Precios') {
+    <div class="tab-panel">
+      <div class="toolbar">
+        <span class="muted small">Tarifas heredadas por las habitaciones sin precio propio.</span
+        ><button class="btn btn-primary" (click)="openConfig('type')">+ Crear nuevo</button>
+      </div>
+      <div class="config-grid">
+        @for (type of admin.roomTypes(); track type.id) {
+          <div class="card config-card">
+            <h3>{{ type.name }}</h3>
+            <div class="split-line">
+              <span>Capacidad</span><strong>{{ type.capacity }} personas</strong>
+            </div>
+            <div class="split-line">
+              <span>Costo por estadía</span
+              ><strong>{{ admin.currencySymbol() }} {{ type.costPerStay }}</strong>
+            </div>
+            <div class="split-line">
+              <span>3h / 6h</span
+              ><strong
+                >{{ admin.currencySymbol() }}{{ type.rates.hours3 }} / {{ admin.currencySymbol()
+                }}{{ type.rates.hours6 }}</strong
+              >
+            </div>
+            <div class="split-line">
+              <span>12h / 24h</span
+              ><strong
+                >{{ admin.currencySymbol() }}{{ type.rates.night12 }} / {{ admin.currencySymbol()
+                }}{{ type.rates.night24 }}</strong
+              >
+            </div>
+            <div class="split-line">
+              <span>Hora extra</span
+              ><strong>{{ admin.currencySymbol() }} {{ type.rates.extraHour }}</strong>
+            </div>
+            <div class="actions">
+              <button class="btn" (click)="openConfig('type', type.id)">Editar</button
+              ><button class="btn btn-danger" (click)="askDelete('type', type.id, type.name)">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+  @if (activeTab() === 'Equipamiento') {
+    <div class="tab-panel">
+      <div class="toolbar">
+        <span class="muted small">Ítems disponibles en el editor de habitaciones.</span
+        ><button class="btn btn-primary" (click)="openConfig('equipment')">+ Crear nuevo</button>
+      </div>
+      <div class="config-grid">
+        @for (item of admin.equipment(); track item) {
+          <div class="card config-card">
+            <h3>{{ item }}</h3>
+            <div class="split-line">
+              <span>Habitaciones</span><strong>{{ equipmentCount(item) }}</strong>
+            </div>
+            <div class="actions">
+              <button class="btn" (click)="openConfig('equipment', item)">Editar</button
+              ><button class="btn btn-danger" (click)="askDelete('equipment', item, item)">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>
+@if (dialog() === 'room') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog large-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="room-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="room-title">
+          {{ editingRoom() === null ? 'Nueva habitación' : 'Editar habitación' }}
+        </h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form [formGroup]="roomForm" (ngSubmit)="saveRoom()">
+        <div class="form-grid">
+          <label class="form-field"
+            >Número o nombre<input class="field" formControlName="number" required /></label
+          ><label class="form-field"
+            >Piso<select class="field" formControlName="floor">
+              @for (floor of admin.floors(); track floor.id) {
+                <option [ngValue]="floor.number">{{ floor.name }}</option>
+              }
+            </select></label
+          ><button
+            class="btn"
+            type="button"
+            (click)="inline.set(inline() === 'floor' ? null : 'floor')"
+          >
+            + Crear nuevo piso</button
+          ><span></span
+          ><label class="form-field"
+            >Tipo<select class="field" formControlName="type" (change)="onTypeChanged($event)">
+              @for (type of admin.roomTypes(); track type.id) {
+                <option [value]="type.name">{{ type.name }}</option>
+              }
+            </select></label
+          ><button
+            class="btn"
+            type="button"
+            (click)="inline.set(inline() === 'type' ? null : 'type')"
+          >
+            + Crear nuevo tipo
+          </button>
+        </div>
+        @if (inline() === 'floor' || inline() === 'type') {
+          <div class="inline-panel" [formGroup]="inlineForm">
+            <div class="inline-create">
+              @if (inline() === 'floor') {
+                <label class="form-field"
+                  >Número<input
+                    class="field"
+                    type="number"
+                    min="1"
+                    max="20"
+                    formControlName="number"
+                /></label>
+              }
+              <label class="form-field">Nombre<input class="field" formControlName="name" /></label>
+              @if (inline() === 'type') {
+                <label class="form-field"
+                  >Capacidad<input class="field" type="number" min="1" formControlName="capacity"
+                /></label>
+              }
+              <button type="button" class="btn btn-primary" (click)="saveInline()">Agregar</button>
+            </div>
+          </div>
+        }
+        <div class="modal-section">
+          <h3>Tarifas</h3>
+          <label class="form-field"
+            ><span
+              ><input type="checkbox" formControlName="inherit" (change)="onInheritChanged()" />
+              Heredar precios del tipo de habitación</span
+            ></label
+          >
+          <div class="rate-grid" [style.opacity]="roomForm.controls.inherit.value ? 0.6 : 1">
+            <label class="form-field"
+              >2 horas<input class="field" type="number" min="0" formControlName="hours2" /></label
+            ><label class="form-field"
+              >3 horas<input class="field" type="number" min="0" formControlName="hours3" /></label
+            ><label class="form-field"
+              >4 horas<input class="field" type="number" min="0" formControlName="hours4" /></label
+            ><label class="form-field"
+              >6 horas<input class="field" type="number" min="0" formControlName="hours6" /></label
+            ><label class="form-field"
+              >12 horas<input
+                class="field"
+                type="number"
+                min="0"
+                formControlName="night12" /></label
+            ><label class="form-field"
+              >24 horas / noche<input
+                class="field"
+                type="number"
+                min="0"
+                formControlName="night24" /></label
+            ><label class="form-field"
+              >Hora adicional<input class="field" type="number" min="0" formControlName="extraHour"
+            /></label>
+          </div>
+        </div>
+        <div class="modal-section">
+          <h3>Características</h3>
+          <div class="form-grid">
+            <label class="form-field"
+              >Capacidad máxima<input
+                class="field"
+                type="number"
+                min="1"
+                formControlName="capacity" /></label
+            ><label class="form-field"
+              >Tipo de cama<select class="field" formControlName="bedType">
+                <option>2 plazas</option>
+                <option>Queen</option>
+                <option>King</option>
+                <option>Individual</option>
+              </select></label
+            ><label class="form-field full"
+              >Descripción y notas<textarea
+                class="field"
+                rows="2"
+                formControlName="notes"
+              ></textarea>
+            </label>
+          </div>
+        </div>
+        <div class="modal-section">
+          <h3>Equipamiento</h3>
+          <div class="check-grid">
+            @for (item of admin.equipment(); track item) {
+              <label
+                ><input
+                  type="checkbox"
+                  [checked]="selectedEquipment().includes(item)"
+                  (change)="toggleEquipment(item)"
+                />
+                {{ item }}</label
+              >
+            }
+          </div>
+          <button
+            class="btn"
+            type="button"
+            style="margin-top: 12px"
+            (click)="inline.set(inline() === 'equipment' ? null : 'equipment')"
+          >
+            + Agregar equipamiento
+          </button>
+          @if (inline() === 'equipment') {
+            <div class="inline-panel" [formGroup]="inlineForm">
+              <div class="inline-create">
+                <label class="form-field"
+                  >Nombre<input class="field" formControlName="name" /></label
+                ><button class="btn btn-primary" type="button" (click)="saveInline()">
+                  Agregar
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+        @if (error()) {
+          <p class="notice" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Guardar habitación</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (dialog() === 'floor' || dialog() === 'type' || dialog() === 'equipment') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="config-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="config-title">
+          {{ editingConfig() === null ? 'Crear' : 'Editar' }}
+          {{
+            dialog() === 'floor' ? 'piso' : dialog() === 'type' ? 'tipo y tarifas' : 'equipamiento'
+          }}
+        </h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      @if (dialog() === 'floor') {
+        <form [formGroup]="floorForm" (ngSubmit)="saveConfig()">
+          <div class="form-grid">
+            <label class="form-field"
+              >Número<input
+                class="field"
+                type="number"
+                min="1"
+                max="20"
+                formControlName="number" /></label
+            ><label class="form-field">Nombre<input class="field" formControlName="name" /></label>
+          </div>
+          <div class="dialog-actions">
+            <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+            ><button class="btn btn-primary" type="submit">Guardar</button>
+          </div>
+        </form>
+      }
+      @if (dialog() === 'equipment') {
+        <form [formGroup]="equipmentForm" (ngSubmit)="saveConfig()">
+          <label class="form-field">Nombre<input class="field" formControlName="name" /></label>
+          <div class="dialog-actions">
+            <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+            ><button class="btn btn-primary" type="submit">Guardar</button>
+          </div>
+        </form>
+      }
+      @if (dialog() === 'type') {
+        <form [formGroup]="typeForm" (ngSubmit)="saveConfig()">
+          <div class="form-grid">
+            <label class="form-field">Nombre<input class="field" formControlName="name" /></label
+            ><label class="form-field"
+              >Capacidad<input
+                class="field"
+                type="number"
+                min="1"
+                formControlName="capacity" /></label
+            ><label class="form-field full"
+              >Costo por estadía (para calcular rentabilidad)<input
+                class="field"
+                type="number"
+                min="0"
+                formControlName="costPerStay"
+            /></label>
+          </div>
+          <div class="modal-section rate-grid">
+            <label class="form-field"
+              >2 horas<input class="field" type="number" min="0" formControlName="hours2" /></label
+            ><label class="form-field"
+              >3 horas<input class="field" type="number" min="0" formControlName="hours3" /></label
+            ><label class="form-field"
+              >4 horas<input class="field" type="number" min="0" formControlName="hours4" /></label
+            ><label class="form-field"
+              >6 horas<input class="field" type="number" min="0" formControlName="hours6" /></label
+            ><label class="form-field"
+              >12 horas<input
+                class="field"
+                type="number"
+                min="0"
+                formControlName="night12" /></label
+            ><label class="form-field"
+              >24 horas<input
+                class="field"
+                type="number"
+                min="0"
+                formControlName="night24" /></label
+            ><label class="form-field"
+              >Hora extra<input class="field" type="number" min="0" formControlName="extraHour"
+            /></label>
+          </div>
+          <div class="dialog-actions">
+            <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+            ><button class="btn btn-primary" type="submit">Guardar tipo</button>
+          </div>
+        </form>
+      }
+      @if (error()) {
+        <p class="notice" role="alert">{{ error() }}</p>
+      }
+    </section>
+  </div>
+}
+@if (dialog() === 'status') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="status-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="status-title">Cambiar estado · {{ statusRoom()?.number }}</h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form [formGroup]="statusForm" (ngSubmit)="saveStatus()">
+        <label class="form-field"
+          >Estado<select class="field" formControlName="status">
+            <option>Disponible</option>
+            <option>Ocupada</option>
+            <option>Limpieza</option>
+            <option>Mantenimiento</option>
+          </select></label
+        >
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Guardar estado</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (deleteTarget(); as target) {
+  <div class="dialog-backdrop" (click)="deleteTarget.set(null)">
+    <section
+      class="dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="delete-title"
+      aria-describedby="delete-description"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="delete-title">Eliminar {{ target.label }}</h2>
+      <p id="delete-description">Esta acción quitará el registro de la configuración.</p>
+      <div class="dialog-actions">
+        <button class="btn" (click)="deleteTarget.set(null)">Cancelar</button
+        ><button class="btn btn-danger" (click)="deleteSelected()">Eliminar</button>
+      </div>
+    </section>
+  </div>
+}

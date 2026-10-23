@@ -1,0 +1,408 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Centro financiero</h1>
+      <p>Caja, ventas y rendimiento del hotel en un mismo lugar.</p>
+    </div>
+    <div class="head-actions">
+      <button class="btn" (click)="open('movement')">+ Ingreso / gasto</button
+      ><button class="btn btn-primary" (click)="open('receipt')">
+        <i class="pi pi-file" aria-hidden="true"></i> Nuevo comprobante
+      </button>
+    </div>
+  </div>
+  <div class="period-bar" role="group" aria-label="Período financiero">
+    @for (item of periods; track item) {
+      <button
+        type="button"
+        class="btn"
+        [class.active]="period() === item"
+        [attr.aria-pressed]="period() === item"
+        (click)="period.set(item)"
+      >
+        {{ item }}
+      </button>
+    }
+  </div>
+  @if (period() === 'Rango personalizado') {
+    <div class="range-fields">
+      <label class="form-field"
+        >Desde<input
+          class="field"
+          type="date"
+          [value]="rangeFrom()"
+          (change)="setFrom($event)" /></label
+      ><label class="form-field"
+        >Hasta<input class="field" type="date" [value]="rangeTo()" (change)="setTo($event)"
+      /></label>
+    </div>
+  }
+  <div class="summary-strip">
+    <span
+      >Hoy <strong>{{ admin.currencySymbol() }} {{ todaySales() }}</strong></span
+    ><span
+      >Semana <strong>{{ admin.currencySymbol() }} {{ weekSales() }}</strong></span
+    ><span
+      >Mes <strong>{{ admin.currencySymbol() }} {{ monthSales() }}</strong></span
+    >
+  </div>
+  <div class="finance-metrics">
+    <div class="card">
+      <span class="metric-label">Ventas del período</span
+      ><strong>{{ admin.currencySymbol() }} {{ sales() }}</strong
+      ><small>Antes de gastos</small>
+    </div>
+    <div class="card">
+      <span class="metric-label">Ticket promedio</span
+      ><strong>{{ admin.currencySymbol() }} {{ averageTicket() }}</strong
+      ><small>Por movimiento positivo</small>
+    </div>
+    <div class="card">
+      <span class="metric-label">Habitaciones</span
+      ><strong>{{ admin.currencySymbol() }} {{ lodging() }}</strong
+      ><small>Por horas y noches</small>
+    </div>
+    <div class="card">
+      <span class="metric-label">Consumos</span
+      ><strong>{{ admin.currencySymbol() }} {{ consumption() }}</strong
+      ><small>Servicios y productos</small>
+    </div>
+    <div class="card">
+      <span class="metric-label">Gastos</span
+      ><strong>{{ admin.currencySymbol() }} {{ expenses() }}</strong
+      ><small>Salidas de caja</small>
+    </div>
+  </div>
+  <div class="finance-grid">
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Ventas por período</h2>
+          <p>Alojamiento frente a consumos y servicios</p>
+        </div>
+      </div>
+      <div class="finance-bars" role="img" [attr.aria-label]="chartLabel()">
+        @for (bar of bars(); track bar.label) {
+          <div class="finance-group">
+            <div class="finance-pair">
+              <i
+                class="lodging"
+                [style.height.%]="barHeight(bar.lodging)"
+                [attr.title]="bar.label + ' · Alojamiento ' + bar.lodging"
+              ></i
+              ><i
+                class="consumption"
+                [style.height.%]="barHeight(bar.consumption)"
+                [attr.title]="bar.label + ' · Consumos ' + bar.consumption"
+              ></i>
+            </div>
+            <span>{{ bar.label }}</span>
+          </div>
+        }
+      </div>
+      <div class="chart-legend">
+        <span><i style="background: #4d73f5"></i>Alojamiento</span
+        ><span><i style="background: #39a7e5"></i>Consumos</span>
+      </div>
+    </section>
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Métodos de pago</h2>
+          <p>Distribución de ingresos del período</p>
+        </div>
+      </div>
+      <div
+        class="method-stack"
+        role="img"
+        [attr.aria-label]="'Distribución de ventas por método de pago'"
+      >
+        @for (item of methodTotals(); track item.method) {
+          <span
+            [style.width.%]="methodWidth(item.amount)"
+            [style.background]="item.color"
+            [attr.title]="item.method + ': ' + item.amount"
+          ></span>
+        }
+      </div>
+      @for (item of methodTotals(); track item.method) {
+        <div class="method-row">
+          <span><i [style.background]="item.color"></i>{{ item.method }}</span
+          ><strong>{{ admin.currencySymbol() }} {{ item.amount }}</strong>
+        </div>
+      }
+    </section>
+  </div>
+  <div class="subgrid">
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Caja y movimientos</h2>
+          <p>
+            {{ store.cashOpen() ? 'Caja abierta' : 'Caja cerrada' }} · saldo estimado
+            {{ admin.currencySymbol() }} {{ cashBalance() }}
+          </p>
+        </div>
+        <button class="btn" (click)="open('cash')">
+          {{ store.cashOpen() ? 'Cerrar caja' : 'Abrir caja' }}
+        </button>
+      </div>
+      <div class="action-row">
+        <button class="btn" (click)="open('movement')">+ Registrar movimiento</button
+        ><button class="btn" (click)="open('receipt')">+ Comprobante</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Movimiento</th>
+              <th>Fecha</th>
+              <th>Método</th>
+              <th class="num">Importe</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of entries().slice(0, 8); track entry.id) {
+              <tr>
+                <td>{{ entry.description }}</td>
+                <td class="mono">{{ entry.date }}</td>
+                <td>{{ entry.method }}</td>
+                <td
+                  class="num"
+                  [class.movement-negative]="entry.amount < 0"
+                  [class.movement-positive]="entry.amount > 0"
+                >
+                  {{ entry.amount < 0 ? '−' : '+' }} {{ admin.currencySymbol() }}
+                  {{ entry.amount < 0 ? -entry.amount : entry.amount }}
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty">No hay movimientos en este período.</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+    <section class="card">
+      <div class="section-heading">
+        <div>
+          <h2>Configuración comercial</h2>
+          <p>Impuestos, promociones y cobros</p>
+        </div>
+      </div>
+      <div class="split-line">
+        <span>IGV</span
+        ><strong
+          >{{ admin.igv() }}% <button class="btn" (click)="open('tax')">Editar</button></strong
+        >
+      </div>
+      <h3 class="section-title" style="margin-top: 20px">
+        Promociones <button class="btn" (click)="open('promotion')">+ Crear nuevo</button>
+      </h3>
+      <div class="config-list">
+        @for (promo of admin.promotions(); track promo.id) {
+          <div>
+            <span
+              >{{ promo.name }} · {{ promo.discount }}%
+              <span [class]="promo.active ? 'badge badge-green' : 'badge badge-gray'">{{
+                promo.active ? 'Activa' : 'Inactiva'
+              }}</span></span
+            ><span
+              ><button class="btn" (click)="open('promotion', promo)">Editar</button>
+              <button class="btn btn-danger" (click)="deletePromotion(promo.id)">
+                Eliminar
+              </button></span
+            >
+          </div>
+        } @empty {
+          <p class="small muted">Sin promociones.</p>
+        }
+      </div>
+      <h3 class="section-title" style="margin-top: 20px">
+        Métodos de pago <button class="btn" (click)="open('method')">+ Agregar</button>
+      </h3>
+      <div class="config-list">
+        @for (method of admin.paymentMethods(); track method) {
+          <div>
+            <span>{{ method }}</span
+            ><button class="btn btn-danger" (click)="deleteMethod(method)">Quitar</button>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+</section>
+@if (dialog()) {
+  <div class="dialog-backdrop" (click)="close()">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="finance-dialog-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="finance-dialog-title">
+          {{
+            dialog() === 'cash'
+              ? store.cashOpen()
+                ? 'Cerrar caja'
+                : 'Abrir caja'
+              : dialog() === 'movement'
+                ? 'Registrar ingreso o gasto'
+                : dialog() === 'receipt'
+                  ? 'Nuevo comprobante'
+                  : dialog() === 'tax'
+                    ? 'Editar IGV'
+                    : dialog() === 'promotion'
+                      ? 'Promoción'
+                      : 'Método de pago'
+          }}
+        </h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="close()">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      @if (dialog() === 'cash') {
+        <form [formGroup]="cashForm" (ngSubmit)="saveCash()">
+          @if (store.cashOpen()) {
+            <p>
+              Saldo estimado: <strong>{{ admin.currencySymbol() }} {{ cashBalance() }}</strong
+              >. Confirme el cierre.
+            </p>
+          } @else {
+            <label class="form-field"
+              >Fondo inicial<input class="field" type="number" min="0" formControlName="amount"
+            /></label>
+          }
+          <div class="dialog-actions">
+            <button class="btn" type="button" (click)="close()">Cancelar</button
+            ><button class="btn btn-primary" type="submit">Confirmar</button>
+          </div>
+        </form>
+      }
+      @if (dialog() === 'movement') {
+        <form [formGroup]="movementForm" (ngSubmit)="saveMovement()">
+          <div class="form-grid">
+            <label class="form-field"
+              >Tipo<select class="field" formControlName="kind">
+                <option>Ingreso</option>
+                <option>Gasto</option>
+              </select></label
+            ><label class="form-field"
+              >Importe<input
+                class="field"
+                type="number"
+                min="0.01"
+                step="0.01"
+                formControlName="amount" /></label
+            ><label class="form-field full"
+              >Descripción<input class="field" formControlName="description" /></label
+            ><label class="form-field full"
+              >Método<select class="field" formControlName="method">
+                @for (method of admin.paymentMethods(); track method) {
+                  <option>{{ method }}</option>
+                }
+              </select></label
+            >
+          </div>
+          <div class="dialog-actions">
+            <button class="btn" type="button" (click)="close()">Cancelar</button
+            ><button class="btn btn-primary" type="submit">Registrar</button>
+          </div>
+        </form>
+      }
+      @if (dialog() === 'receipt') {
+        <form [formGroup]="receiptForm" (ngSubmit)="saveReceipt()">
+          <div class="form-grid">
+            <label class="form-field"
+              >Tipo<select class="field" formControlName="type">
+                <option>Boleta</option>
+                <option>Factura</option>
+              </select></label
+            ><label class="form-field"
+              >Huésped<select class="field" formControlName="guest">
+                <option value="">Seleccionar</option>
+                @for (guest of store.guests(); track guest.id) {
+                  <option [value]="guest.name">{{ guest.name }}</option>
+                }
+              </select></label
+            ><label class="form-field"
+              >Importe<input
+                class="field"
+                type="number"
+                min="0.01"
+                step="0.01"
+                formControlName="amount" /></label
+            ><label class="form-field"
+              >Método<select class="field" formControlName="method">
+                @for (method of admin.paymentMethods(); track method) {
+                  <option>{{ method }}</option>
+                }
+              </select></label
+            >
+          </div>
+          <div class="dialog-actions">
+            <button class="btn" type="button" (click)="close()">Cancelar</button
+            ><button class="btn btn-primary" type="submit">Emitir</button>
+          </div>
+        </form>
+      }
+      @if (dialog() === 'tax') {
+        <form [formGroup]="taxForm" (ngSubmit)="saveTax()">
+          <label class="form-field"
+            >IGV (%)<input class="field" type="number" min="0" max="100" formControlName="igv"
+          /></label>
+          <div class="dialog-actions">
+            <button class="btn" type="button" (click)="close()">Cancelar</button
+            ><button class="btn btn-primary" type="submit">Guardar</button>
+          </div>
+        </form>
+      }
+      @if (dialog() === 'promotion') {
+        <form [formGroup]="promotionForm" (ngSubmit)="savePromotion()">
+          <div class="form-grid">
+            <label class="form-field full"
+              >Nombre<input
+                class="field"
+                formControlName="name"
+                placeholder="Promo 4 horas" /></label
+            ><label class="form-field"
+              >Descuento (%)<input
+                class="field"
+                type="number"
+                min="0"
+                max="100"
+                formControlName="discount" /></label
+            ><label class="form-field"
+              ><span><input type="checkbox" formControlName="active" /> Activa</span></label
+            >
+          </div>
+          <div class="dialog-actions">
+            <button class="btn" type="button" (click)="close()">Cancelar</button
+            ><button class="btn btn-primary" type="submit">Guardar</button>
+          </div>
+        </form>
+      }
+      @if (dialog() === 'method') {
+        <form [formGroup]="methodForm" (ngSubmit)="saveMethod()">
+          <label class="form-field"
+            >Nombre del método<input
+              class="field"
+              formControlName="name"
+              placeholder="Efectivo, Yape, Plin..."
+          /></label>
+          <div class="dialog-actions">
+            <button class="btn" type="button" (click)="close()">Cancelar</button
+            ><button class="btn btn-primary" type="submit">Agregar</button>
+          </div>
+        </form>
+      }
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+    </section>
+  </div>
+}

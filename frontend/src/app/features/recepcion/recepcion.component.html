@@ -1,0 +1,301 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Rack de recepción</h1>
+      <p>Estancias por horas y noches, salidas y disponibilidad.</p>
+    </div>
+    <div class="legend">
+      <span><i style="background: #5c9d51"></i> Disponible {{ store.available() }}</span
+      ><span><i style="background: #a23838"></i> Ocupada {{ store.occupied() }}</span
+      ><span><i style="background: #d8a34c"></i> Limpieza {{ store.cleaning() }}</span>
+    </div>
+  </div>
+  <div class="toolbar">
+    <label class="form-field"
+      >Filtrar por estado<select class="field" [value]="filter()" (change)="setFilter($event)">
+        <option>Todos</option>
+        <option>Disponible</option>
+        <option>Ocupada</option>
+        <option>Limpieza</option>
+        <option>Mantenimiento</option>
+      </select></label
+    ><span class="small muted">Seleccione una tarjeta para abrir el control operativo</span>
+  </div>
+  @for (floor of admin.floors(); track floor.id) {
+    <section class="floor">
+      <h2>
+        {{ floor.name }} <span>{{ countOnFloor(floor.number) }} habitaciones</span>
+      </h2>
+      <div class="room-grid">
+        @for (room of visibleRooms(); track room.id) {
+          @if (room.floor === floor.number) {
+            <article [class]="'room-card status-' + room.status.toLowerCase()">
+              <button class="room-open" type="button" (click)="open(room)">
+                <span class="room-top"
+                  ><strong>{{ room.number }}</strong
+                  ><span class="state-dot" aria-hidden="true"></span></span
+                ><span class="room-type"
+                  >{{ room.type }} · desde {{ admin.currencySymbol() }} {{ rates(room).hours3 }} /
+                  3h</span
+                ><span class="room-status">{{ room.status }}</span
+                ><span class="room-detail">{{ room.guest || 'Sin huésped' }}</span
+                ><span class="room-detail">{{ stayLabel(room) }}</span></button
+              ><select
+                class="field quick-state"
+                [value]="room.status"
+                [attr.aria-label]="'Cambiar estado de la habitación ' + room.number"
+                (change)="quickStatus(room, $event)"
+              >
+                <option>Disponible</option>
+                <option>Ocupada</option>
+                <option>Limpieza</option>
+                <option>Mantenimiento</option>
+              </select>
+            </article>
+          }
+        }
+      </div>
+    </section>
+  }
+</section>
+@if (selected(); as room) {
+  <div class="dialog-backdrop" (click)="close()">
+    <section
+      class="dialog control-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="room-control-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <div>
+          <h2 id="room-control-title">Habitación {{ room.number }}</h2>
+          <p class="small muted">{{ room.type }} · {{ room.status }}</p>
+        </div>
+        <button class="icon-btn" aria-label="Cerrar" (click)="close()">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      @if (room.status === 'Disponible') {
+        <div class="operation-summary">
+          <div>
+            <small>3 horas</small
+            ><strong>{{ admin.currencySymbol() }} {{ rates(room).hours3 }}</strong>
+          </div>
+          <div>
+            <small>6 horas</small
+            ><strong>{{ admin.currencySymbol() }} {{ rates(room).hours6 }}</strong>
+          </div>
+          <div>
+            <small>24 horas</small
+            ><strong>{{ admin.currencySymbol() }} {{ rates(room).night24 }}</strong>
+          </div>
+        </div>
+        <h3 class="subhead">Ingreso inmediato</h3>
+        <form [formGroup]="walkInForm" (ngSubmit)="saveWalkIn()">
+          <div class="form-grid">
+            <label class="form-field"
+              >Modalidad<select
+                class="field"
+                formControlName="mode"
+                (change)="
+                  walkInForm.controls.durationHours.setValue(
+                    walkInForm.controls.mode.value === 'Horas' ? 3 : 24
+                  )
+                "
+              >
+                <option>Horas</option>
+                <option>Noche</option>
+              </select></label
+            ><label class="form-field"
+              >Duración<select class="field" formControlName="durationHours">
+                @if (walkInForm.controls.mode.value === 'Horas') {
+                  <option [ngValue]="2">2 horas</option>
+                  <option [ngValue]="3">3 horas</option>
+                  <option [ngValue]="4">4 horas</option>
+                  <option [ngValue]="6">6 horas</option>
+                } @else {
+                  <option [ngValue]="12">12 horas</option>
+                  <option [ngValue]="24">24 horas / noche</option>
+                }
+              </select></label
+            ><label class="form-field"
+              >Nombre del huésped<input
+                class="field"
+                formControlName="guest"
+                placeholder="Nombre o ingreso rápido" /></label
+            ><label class="form-field"
+              >DNI / documento<input class="field" formControlName="document" /></label
+            ><label class="form-field full"
+              ><span
+                ><input type="checkbox" formControlName="anonymous" /> Ingreso rápido /
+                anónimo</span
+              ></label
+            >
+          </div>
+          <h3 class="subhead">Acompañante</h3>
+          <div class="form-grid">
+            <label class="form-field"
+              >Nombre<input class="field" formControlName="companionName" /></label
+            ><label class="form-field"
+              >Documento<input class="field" formControlName="companionDocument" /></label
+            ><label class="form-field full"
+              >Parentesco<select class="field" formControlName="relationship">
+                <option>Familiar</option>
+                <option>Cónyuge</option>
+                <option>Amigo/a</option>
+                <option>Otro</option>
+              </select></label
+            >
+          </div>
+          <h3 class="subhead">Extras y consumos</h3>
+          <div class="check-row">
+            <label><input type="checkbox" formControlName="breakfast" /> Desayuno</label
+            ><label><input type="checkbox" formControlName="parking" /> Cochera</label
+            ><label><input type="checkbox" formControlName="spa" /> Spa</label>
+          </div>
+          <div class="form-grid" style="margin-top: 12px">
+            <label class="form-field"
+              >Producto de frigobar / vitrina<select class="field" formControlName="productId">
+                <option [ngValue]="0">Ninguno</option>
+                @for (item of admin.catalog(); track item.id) {
+                  @if (
+                    item.active && (item.category === 'Frigobar' || item.category === 'Vitrina')
+                  ) {
+                    <option [ngValue]="item.id">
+                      {{ item.name }} · {{ admin.currencySymbol() }} {{ item.price }}
+                    </option>
+                  }
+                }
+              </select></label
+            ><label class="form-field"
+              >Cantidad<input
+                class="field"
+                type="number"
+                min="1"
+                formControlName="productQuantity" /></label
+            ><label class="form-field full"
+              >Método de pago<select class="field" formControlName="method">
+                @for (method of admin.paymentMethods(); track method) {
+                  <option>{{ method }}</option>
+                }
+              </select></label
+            >
+          </div>
+          <div class="total-row">
+            <span>Total a cobrar</span
+            ><strong>{{ admin.currencySymbol() }} {{ walkInTotal(room) }}</strong>
+          </div>
+          @if (error()) {
+            <p class="error" role="alert">{{ error() }}</p>
+          }
+          <div class="dialog-actions">
+            <button type="button" class="btn" (click)="close()">Cancelar</button
+            ><button type="submit" class="btn btn-primary">Cobrar e ingresar</button>
+          </div>
+        </form>
+      }
+      @if (room.status === 'Ocupada') {
+        <div class="operation-summary">
+          <div>
+            <small>Titular</small><strong>{{ room.guest }}</strong>
+          </div>
+          <div>
+            <small>Entrada</small
+            ><strong>{{ room.stay ? dateTime(room.stay.startedAt) : '—' }}</strong>
+          </div>
+          <div>
+            <small>Salida exacta</small
+            ><strong>{{ room.stay ? dateTime(room.stay.endsAt) : '—' }}</strong>
+          </div>
+        </div>
+        <p class="expiry">{{ remaining(room) }} · {{ stayLabel(room) }}</p>
+        <div class="split-line">
+          <span>Consumos acumulados</span
+          ><strong>{{ admin.currencySymbol() }} {{ consumptionTotal(room) }}</strong>
+        </div>
+        @for (item of roomConsumptions(room); track item.id) {
+          <div class="split-line">
+            <span>{{ item.service }} × {{ item.quantity }}</span
+            ><strong>{{ admin.currencySymbol() }} {{ item.amount }}</strong>
+          </div>
+        }
+        <div class="divider"></div>
+        <div class="quick-actions">
+          <button class="btn" (click)="extend(1)">+ Hora extra</button
+          ><button class="btn" (click)="extend(24)">+ Noche</button
+          ><button
+            class="btn"
+            (click)="activeAction.set(activeAction() === 'consumo' ? null : 'consumo')"
+          >
+            + Cargar consumo</button
+          ><button
+            class="btn"
+            (click)="activeAction.set(activeAction() === 'mover' ? null : 'mover')"
+          >
+            Cambiar habitación
+          </button>
+        </div>
+        @if (activeAction() === 'consumo') {
+          <form class="inline-action" [formGroup]="consumptionForm" (ngSubmit)="saveConsumption()">
+            <div class="form-grid">
+              <label class="form-field"
+                >Producto o servicio<select class="field" formControlName="itemId">
+                  <option [ngValue]="0">Seleccionar</option>
+                  @for (item of admin.catalog(); track item.id) {
+                    @if (item.active) {
+                      <option [ngValue]="item.id">
+                        {{ item.name }} · {{ admin.currencySymbol() }} {{ item.price }}
+                      </option>
+                    }
+                  }
+                </select></label
+              ><label class="form-field"
+                >Cantidad<input class="field" type="number" min="1" formControlName="quantity"
+              /></label>
+            </div>
+            <div class="dialog-actions">
+              <button class="btn btn-primary" type="submit">Cargar a la habitación</button>
+            </div>
+          </form>
+        }
+        @if (activeAction() === 'mover') {
+          <form class="inline-action" [formGroup]="moveForm" (ngSubmit)="move()">
+            <label class="form-field"
+              >Mover a<select class="field" formControlName="roomId">
+                <option [ngValue]="0">Seleccionar habitación</option>
+                @for (item of availableRooms(room); track item.id) {
+                  <option [ngValue]="item.id">{{ item.number }} · {{ item.type }}</option>
+                }
+              </select></label
+            >
+            <div class="dialog-actions">
+              <button class="btn btn-primary" type="submit">Confirmar cambio</button>
+            </div>
+          </form>
+        }
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" (click)="close()">Cerrar</button
+          ><button class="btn btn-primary" (click)="finish()">
+            Check-out / liberar a limpieza
+          </button>
+        </div>
+      }
+      @if (room.status === 'Limpieza' || room.status === 'Mantenimiento') {
+        <p>La habitación está marcada como {{ room.status.toLowerCase() }}.</p>
+        <div class="dialog-actions">
+          <button class="btn" (click)="close()">Cerrar</button
+          ><button
+            class="btn btn-primary"
+            (click)="store.updateRoom(room.id, 'Disponible'); close()"
+          >
+            Marcar disponible
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+}

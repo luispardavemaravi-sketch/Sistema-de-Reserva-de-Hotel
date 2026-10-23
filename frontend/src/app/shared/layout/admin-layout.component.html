@@ -1,0 +1,183 @@
+<div class="shell">
+  <aside class="sidebar" [class.open]="menuOpen()" aria-label="Navegación principal">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><span>P</span></span
+      ><span
+        ><strong>{{ admin.profile().name }}</strong
+        ><small>HOTEL · ADMINISTRACIÓN</small></span
+      >
+    </div>
+    <label class="nav-search">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input
+        type="search"
+        placeholder="Buscar en el menú"
+        [value]="navQuery()"
+        (input)="setNavQuery($event)"
+      />
+    </label>
+    <div class="nav-label">ESPACIO DE TRABAJO</div>
+    <nav>
+      @for (item of filteredNavigation(); track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="menuOpen.set(false)"
+          ><span class="nav-icon"><i [class]="item.icon" aria-hidden="true"></i></span
+          ><span>{{ item.label }}</span></a
+        >
+      } @empty {
+        <p class="nav-empty">No hay módulos con ese nombre.</p>
+      }
+    </nav>
+    <div class="sidebar-foot">
+      @if (auth.role() === 'ADMINISTRADOR') {
+        <button type="button" (click)="openSettings()">
+          <i class="pi pi-cog" aria-hidden="true"></i> Configuración del hotel
+        </button>
+      }
+      <small>{{
+        admin.profile().ruc ? 'RUC ' + admin.profile().ruc : 'Personalice su establecimiento'
+      }}</small>
+    </div>
+  </aside>
+  @if (menuOpen()) {
+    <button class="mobile-scrim" aria-label="Cerrar menú" (click)="menuOpen.set(false)"></button>
+  }
+  <div class="workspace">
+    <header class="topbar">
+      <div class="top-left">
+        <button
+          class="menu-toggle"
+          type="button"
+          [attr.aria-expanded]="menuOpen()"
+          aria-label="Abrir menú"
+          (click)="menuOpen.update((v) => !v)"
+        >
+          <i class="pi pi-bars" aria-hidden="true"></i></button
+        ><button class="workspace-switch" type="button" (click)="openSettings()">
+          <span class="workspace-switch-mark" aria-hidden="true">P</span>
+          <span>{{ admin.profile().name }}</span>
+          <i class="pi pi-angle-down" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="top-right">
+        <span class="shift"
+          ><i class="pi pi-clock" aria-hidden="true"></i> {{ auth.activeTurno()?.name }} ·
+          {{ auth.activeTurno()?.start }}–{{ auth.activeTurno()?.end }}</span
+        ><button
+          type="button"
+          class="theme-toggle"
+          [attr.aria-label]="theme.dark() ? 'Activar modo claro' : 'Activar modo oscuro'"
+          [attr.aria-pressed]="theme.dark()"
+          (click)="theme.toggle()"
+        >
+          <i [class]="theme.dark() ? 'pi pi-sun' : 'pi pi-moon'" aria-hidden="true"></i></button
+        ><span class="cash" [class.closed]="!store.cashOpen()"
+          ><span class="live-dot" aria-hidden="true"></span> Caja
+          {{ store.cashOpen() ? 'abierta' : 'cerrada' }}</span
+        >
+        <div class="profile-menu-wrap">
+          <button
+            class="profile profile-button"
+            type="button"
+            [attr.aria-expanded]="profileOpen()"
+            (click)="profileOpen.update((v) => !v)"
+          >
+            <span class="avatar" aria-hidden="true">{{ initials() }}</span
+            ><span>{{ auth.currentUser()?.nombres }}</span
+            ><i class="pi pi-angle-down" aria-hidden="true"></i>
+          </button>
+          @if (profileOpen()) {
+            <div class="profile-dropdown">
+              <strong>{{ auth.currentUser()?.nombres }}</strong
+              ><small>{{ auth.role() }} · {{ auth.activeTurno()?.name }}</small
+              ><button type="button" (click)="profileOpen.set(false); profileDetails.set(true)">
+                Mi perfil / turno actual</button
+              ><button type="button" (click)="logout()">Cambiar de usuario rápido</button
+              ><button type="button" class="logout" (click)="logout()">Cerrar sesión</button>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+    <main id="main-content" class="main-content"><router-outlet></router-outlet></main>
+  </div>
+</div>
+@if (profileDetails()) {
+  <div class="dialog-backdrop" (click)="profileDetails.set(false)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="profile-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="profile-title">Mi perfil y turno</h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="profileDetails.set(false)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <p>
+        <strong>{{ auth.currentUser()?.nombres }} {{ auth.currentUser()?.apellidos }}</strong>
+      </p>
+      <p>{{ auth.currentUser()?.correo }} · {{ auth.role() }}</p>
+      <p>
+        Turno actual: {{ auth.activeTurno()?.name }} · {{ auth.activeTurno()?.start }}–{{
+          auth.activeTurno()?.end
+        }}
+      </p>
+    </section>
+  </div>
+}
+@if (settingsOpen()) {
+  <div class="dialog-backdrop" (click)="settingsOpen.set(false)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="hotel-settings-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="hotel-settings-title">Configuración del hotel</h2>
+        <button
+          type="button"
+          class="icon-btn"
+          aria-label="Cerrar"
+          (click)="settingsOpen.set(false)"
+        >
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form [formGroup]="settingsForm" (ngSubmit)="saveSettings()">
+        <div class="form-grid">
+          <label class="form-field full"
+            >Nombre del hotel<input class="field" formControlName="name" required /></label
+          ><label class="form-field"
+            >RUC<input
+              class="field"
+              formControlName="ruc"
+              inputmode="numeric"
+              maxlength="11"
+              placeholder="11 dígitos" /></label
+          ><label class="form-field"
+            >Moneda<select class="field" formControlName="currency">
+              <option value="PEN">Soles (PEN)</option>
+              <option value="USD">Dólares (USD)</option>
+            </select></label
+          >
+        </div>
+        @if (settingsError()) {
+          <p class="form-error" role="alert">{{ settingsError() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="settingsOpen.set(false)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Guardar configuración</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

@@ -1,0 +1,310 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Servicios y productos</h1>
+      <p>Catálogo de servicios, vitrina, frigobar y cargos a la habitación.</p>
+    </div>
+    <div class="head-actions">
+      @if (isAdmin()) {
+        <button class="btn" (click)="openCatalog()">+ Producto / servicio</button>
+      }
+      <button class="btn btn-primary" (click)="openConsumption()">+ Registrar consumo</button>
+    </div>
+  </div>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Cargos activos</div>
+      <div class="metric-value">{{ store.consumptions().length }}</div>
+      <div class="metric-note">Historial de consumos</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Ingresos por consumos</div>
+      <div class="metric-value">{{ admin.currencySymbol() }} {{ total() }}</div>
+      <div class="metric-note">Sin cargos anulados</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Catálogo activo</div>
+      <div class="metric-value">{{ admin.catalog().length }}</div>
+      <div class="metric-note">Servicios y productos</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Áreas</div>
+      <div class="metric-value">{{ admin.areas().length }}</div>
+      <div class="metric-note">Puntos de venta</div>
+    </div>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Servicios">
+    @for (tab of tabs; track tab) {
+      <button
+        role="tab"
+        class="tab"
+        [class.active]="activeTab() === tab"
+        [attr.aria-selected]="activeTab() === tab"
+        (click)="activeTab.set(tab)"
+      >
+        {{ tab }}
+      </button>
+    }
+  </div>
+  <div class="toolbar">
+    <input
+      class="field search"
+      type="search"
+      aria-label="Buscar producto o consumo"
+      placeholder="Buscar habitación, servicio o producto"
+      (input)="setQuery($event)"
+    /><span class="toolbar-actions">
+      @if (isAdmin() && activeTab() === 'Áreas') {
+        <button class="btn btn-primary" (click)="openArea()">+ Crear área</button>
+      }
+      @if (isAdmin() && activeTab() === 'Catálogo') {
+        <button class="btn btn-primary" (click)="openCatalog()">+ Crear nuevo</button>
+      }
+    </span>
+  </div>
+  @if (error() && !dialog()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+  @if (activeTab() === 'Consumos') {
+    <div class="card table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Habitación</th>
+            <th>Producto / servicio</th>
+            <th>Hora</th>
+            <th class="num">Cantidad</th>
+            <th class="num">Importe</th>
+            <th>Estado</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of filtered(); track row.id) {
+            <tr [class.cancelled]="row.cancelled">
+              <td class="mono">{{ row.room }}</td>
+              <td>{{ row.service }}</td>
+              <td>{{ row.time }}</td>
+              <td class="num">{{ row.quantity }}</td>
+              <td class="num">{{ admin.currencySymbol() }} {{ row.amount }}</td>
+              <td>
+                <span [class]="row.cancelled ? 'badge badge-gray' : 'badge badge-green'">{{
+                  row.cancelled ? 'Anulado' : 'Cargado'
+                }}</span>
+              </td>
+              <td>
+                @if (isAdmin() && !row.cancelled) {
+                  <button class="btn btn-danger" (click)="askVoid(row)">Anular cargo</button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="7" class="empty">No se encontraron consumos.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+  @if (activeTab() === 'Catálogo') {
+    <div class="service-grid">
+      @for (item of catalogFiltered(); track item.id) {
+        <article class="card service-card">
+          <h3>{{ item.name }}</h3>
+          <p>{{ item.category }} · {{ item.area }}</p>
+          <strong>{{ admin.currencySymbol() }} {{ item.price }}</strong>
+          <div class="actions">
+            <span [class]="item.active ? 'badge badge-green' : 'badge badge-gray'">{{
+              item.active ? 'Activo' : 'Inactivo'
+            }}</span>
+            @if (isAdmin()) {
+              <button class="btn" (click)="openCatalog(item)">Editar precio</button
+              ><button class="btn btn-danger" (click)="deleteCatalog(item.id)">Eliminar</button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <p class="empty">No hay productos. Cree uno desde esta pestaña.</p>
+      }
+    </div>
+  }
+  @if (activeTab() === 'Áreas') {
+    <div class="service-grid">
+      @for (area of admin.areas(); track area) {
+        <article class="card service-card">
+          <h3>{{ area }}</h3>
+          <p>{{ serviceCount(area) }} productos o servicios</p>
+          <div class="actions">
+            @if (isAdmin()) {
+              <button class="btn" (click)="openArea(area)">Editar</button
+              ><button class="btn btn-danger" (click)="deleteArea(area)">Eliminar</button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>
+@if (dialog() === 'consumption') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="new-consumption-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="new-consumption-title">Registrar consumo</h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form [formGroup]="consumptionForm" (ngSubmit)="saveConsumption()">
+        <div class="form-grid">
+          <label class="form-field"
+            >Habitación<select class="field" formControlName="room">
+              <option value="">Seleccionar</option>
+              @for (room of store.rooms(); track room.id) {
+                @if (room.status === 'Ocupada') {
+                  <option [value]="room.number">{{ room.number }} · {{ room.guest }}</option>
+                }
+              }
+            </select></label
+          ><label class="form-field"
+            >Producto / servicio<select class="field" formControlName="itemId">
+              <option [ngValue]="0">Seleccionar</option>
+              @for (item of admin.catalog(); track item.id) {
+                @if (item.active) {
+                  <option [ngValue]="item.id">
+                    {{ item.name }} · {{ admin.currencySymbol() }}{{ item.price }}
+                  </option>
+                }
+              }
+            </select></label
+          ><label class="form-field"
+            >Cantidad<input class="field" type="number" min="1" formControlName="quantity" /></label
+          ><label class="form-field"
+            >Método de pago<select class="field" formControlName="method">
+              @for (method of admin.paymentMethods(); track method) {
+                <option>{{ method }}</option>
+              }
+            </select></label
+          >
+        </div>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Registrar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (dialog() === 'catalog') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="catalog-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="catalog-title">
+          {{ editingId() === null ? 'Nuevo producto o servicio' : 'Editar producto o servicio' }}
+        </h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form [formGroup]="catalogForm" (ngSubmit)="saveCatalog()">
+        <div class="form-grid">
+          <label class="form-field full">Nombre<input class="field" formControlName="name" /></label
+          ><label class="form-field"
+            >Categoría<select class="field" formControlName="category">
+              <option>Servicio</option>
+              <option>Frigobar</option>
+              <option>Vitrina</option>
+            </select></label
+          ><label class="form-field"
+            >Área<select class="field" formControlName="area">
+              @for (area of admin.areas(); track area) {
+                <option>{{ area }}</option>
+              }
+            </select></label
+          ><label class="form-field"
+            >Precio<input
+              class="field"
+              type="number"
+              min="0"
+              step="0.01"
+              formControlName="price" /></label
+          ><label class="form-field"
+            ><span><input type="checkbox" formControlName="active" /> Activo</span></label
+          >
+        </div>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (dialog() === 'area') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="area-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="area-title">{{ editingArea() ? 'Editar área' : 'Nueva área' }}</h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form [formGroup]="areaForm" (ngSubmit)="saveArea()">
+        <label class="form-field">Nombre<input class="field" formControlName="name" /></label>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Guardar</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (dialog() === 'void' && selectedConsumption(); as row) {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="void-title"
+      aria-describedby="void-text"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="void-title">Anular consumo</h2>
+      <p id="void-text">
+        Se anulará {{ row.service }} de la habitación {{ row.room }} y se retirará el cargo del
+        reporte.
+      </p>
+      <div class="dialog-actions">
+        <button class="btn" (click)="dialog.set(null)">Cancelar</button
+        ><button class="btn btn-danger" (click)="voidConsumption()">Anular cargo</button>
+      </div>
+    </section>
+  </div>
+}

@@ -1,0 +1,263 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Personal y turnos</h1>
+      <p>Equipo, cargos y horarios definidos por el hotel.</p>
+    </div>
+    <div class="head-actions">
+      <button class="btn" (click)="openShift()">+ Nuevo turno</button
+      ><button class="btn btn-primary" (click)="openEmployee()">+ Nuevo empleado</button>
+    </div>
+  </div>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Empleados</div>
+      <div class="metric-value">{{ store.employees().length }}</div>
+      <div class="metric-note">En la plantilla</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Activos</div>
+      <div class="metric-value">{{ activeCount() }}</div>
+      <div class="metric-note">En servicio</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Turnos</div>
+      <div class="metric-value">{{ admin.shifts().length }}</div>
+      <div class="metric-note">Horarios configurados</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">En descanso</div>
+      <div class="metric-value">{{ store.employees().length - activeCount() }}</div>
+      <div class="metric-note">Fuera de servicio</div>
+    </div>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Personal">
+    @for (item of tabs; track item) {
+      <button
+        role="tab"
+        class="tab"
+        [class.active]="tab() === item"
+        [attr.aria-selected]="tab() === item"
+        (click)="tab.set(item)"
+      >
+        {{ item }}
+      </button>
+    }
+  </div>
+  @if (tab() === 'Empleados') {
+    <div class="toolbar">
+      <input
+        class="field search"
+        type="search"
+        aria-label="Buscar empleado"
+        placeholder="Buscar nombre, cargo o turno"
+        (input)="setQuery($event)"
+      /><span class="small muted">{{ filtered().length }} empleados</span>
+    </div>
+    <div class="card table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Empleado</th>
+            <th>Documento</th>
+            <th>Cargo</th>
+            <th>Turno</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (employee of filtered(); track employee.id) {
+            <tr>
+              <td>
+                <strong>{{ employee.name }}</strong>
+                <div class="small muted">{{ employee.email || '—' }}</div>
+              </td>
+              <td class="mono">{{ employee.document || '—' }}</td>
+              <td>{{ employee.role }}</td>
+              <td>{{ employee.shift }}</td>
+              <td>
+                <span
+                  [class]="employee.status === 'Activo' ? 'badge badge-green' : 'badge badge-gray'"
+                  >{{ employee.status }}</span
+                >
+              </td>
+              <td>
+                <div class="actions">
+                  <button class="btn" (click)="openEmployee(employee)">Editar</button
+                  ><button class="btn" (click)="toggleStatus(employee.id)">
+                    {{ employee.status === 'Activo' ? 'Descanso' : 'Activar' }}</button
+                  ><button class="btn btn-danger" (click)="askDeleteEmployee(employee.id)">
+                    Eliminar
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty">No se encontraron empleados.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+  @if (tab() === 'Turnos') {
+    <div class="shift-grid">
+      @for (shift of admin.shifts(); track shift.id) {
+        <article class="card shift-card">
+          <h3>{{ shift.name }}</h3>
+          <p>{{ shift.start }} – {{ shift.end }}</p>
+          <div class="split-line">
+            <span>Asignados</span><strong>{{ shiftCount(shift.name) }}</strong>
+          </div>
+          <div class="actions">
+            <button class="btn" (click)="openShift(shift)">Editar horario</button
+            ><button class="btn btn-danger" (click)="askDeleteShift(shift.id)">Eliminar</button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+</section>
+@if (dialog() === 'employee') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="employee-form-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="employee-form-title">
+          {{ editingEmployee() === null ? 'Nuevo empleado' : 'Editar empleado' }}
+        </h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form [formGroup]="employeeForm" (ngSubmit)="saveEmployee()">
+        <div class="form-grid">
+          <label class="form-field full"
+            >Nombre completo<input class="field" formControlName="name" /></label
+          ><label class="form-field"
+            >Documento<input class="field" formControlName="document" /></label
+          ><label class="form-field"
+            >Correo<input class="field" type="email" formControlName="email" /></label
+          ><label class="form-field">Teléfono<input class="field" formControlName="phone" /></label
+          ><label class="form-field"
+            >Cargo<select class="field" formControlName="role">
+              <option>Recepción</option>
+              <option>Housekeeping</option>
+              <option>Caja</option>
+              <option>Mantenimiento</option>
+              <option>Servicios</option>
+              <option>Administrador</option>
+            </select></label
+          ><label class="form-field"
+            >Turno<select class="field" formControlName="shift">
+              @for (shift of admin.shifts(); track shift.id) {
+                <option [value]="shift.name">
+                  {{ shift.name }} · {{ shift.start }}–{{ shift.end }}
+                </option>
+              }
+            </select></label
+          ><label class="form-field"
+            >Estado<select class="field" formControlName="status">
+              <option>Activo</option>
+              <option>Descanso</option>
+            </select></label
+          >
+        </div>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Guardar empleado</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (dialog() === 'shift') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="shift-form-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="shift-form-title">
+          {{ editingShift() === null ? 'Nuevo turno' : 'Editar turno' }}
+        </h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form [formGroup]="shiftForm" (ngSubmit)="saveShift()">
+        <div class="form-grid">
+          <label class="form-field full">Nombre<input class="field" formControlName="name" /></label
+          ><label class="form-field"
+            >Hora de inicio<input class="field" type="time" formControlName="start" /></label
+          ><label class="form-field"
+            >Hora de fin<input class="field" type="time" formControlName="end"
+          /></label>
+        </div>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Guardar turno</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (dialog() === 'deleteEmployee') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="delete-employee-title"
+      aria-describedby="delete-employee-text"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="delete-employee-title">Eliminar empleado</h2>
+      <p id="delete-employee-text">Se retirará de la plantilla.</p>
+      <div class="dialog-actions">
+        <button class="btn" (click)="dialog.set(null)">Cancelar</button
+        ><button class="btn btn-danger" (click)="deleteEmployee()">Eliminar</button>
+      </div>
+    </section>
+  </div>
+}
+@if (dialog() === 'deleteShift') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="delete-shift-title"
+      aria-describedby="delete-shift-text"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="delete-shift-title">Eliminar turno</h2>
+      <p id="delete-shift-text">
+        Los turnos con empleados asignados deben vaciarse antes de eliminarlos.
+      </p>
+      @if (error()) {
+        <p class="error" role="alert">{{ error() }}</p>
+      }
+      <div class="dialog-actions">
+        <button class="btn" (click)="dialog.set(null)">Cancelar</button
+        ><button class="btn btn-danger" (click)="deleteShift()">Eliminar</button>
+      </div>
+    </section>
+  </div>
+}

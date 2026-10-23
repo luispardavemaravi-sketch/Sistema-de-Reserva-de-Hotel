@@ -1,0 +1,310 @@
+<section class="page">
+  <div class="page-head">
+    <div>
+      <h1>Reservas</h1>
+      <p>Alquileres por horas y noches, acompañantes y extras.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openForm()">
+      <i class="pi pi-plus" aria-hidden="true"></i> Nueva reserva
+    </button>
+  </div>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Activas</div>
+      <div class="metric-value">{{ activeCount() }}</div>
+      <div class="metric-note">Confirmadas y en curso</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Por confirmar</div>
+      <div class="metric-value">{{ pendingCount() }}</div>
+      <div class="metric-note">Requieren atención</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Por horas</div>
+      <div class="metric-value">{{ hoursCount() }}</div>
+      <div class="metric-note">Reservas de fracción</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Con extras</div>
+      <div class="metric-value">{{ extrasCount() }}</div>
+      <div class="metric-note">Servicios asociados</div>
+    </div>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Estado de reservas">
+    @for (tab of tabs; track tab) {
+      <button
+        role="tab"
+        class="tab"
+        [class.active]="filter() === tab"
+        [attr.aria-selected]="filter() === tab"
+        (click)="filter.set(tab)"
+      >
+        {{ tab }}
+      </button>
+    }
+  </div>
+  <div class="toolbar">
+    <input
+      class="field search"
+      type="search"
+      aria-label="Buscar reserva"
+      placeholder="Buscar huésped, habitación o código"
+      (input)="setQuery($event)"
+    /><span class="muted small">{{ filtered().length }} reservas</span>
+  </div>
+  @if (error() && !dialog()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+  <div class="card table-wrap">
+    <table class="data-table reservation-table">
+      <thead>
+        <tr>
+          <th>Reserva / huésped</th>
+          <th>Habitación</th>
+          <th>Estadía</th>
+          <th>Extras</th>
+          <th>Estado</th>
+          <th class="num">Total</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of filtered(); track row.id) {
+          <tr>
+            <td>
+              <strong>{{ row.guest }}</strong
+              ><span class="mode-tag mono">{{ row.code }}</span>
+            </td>
+            <td class="mono">{{ row.room }}</td>
+            <td>
+              {{ stayLabel(row) }}<span class="mode-tag">{{ row.mode || 'Noche' }}</span>
+            </td>
+            <td>{{ row.extras.join(', ') || '—' }}</td>
+            <td>
+              <span [class]="badgeClass(row.status)">{{ row.status }}</span>
+            </td>
+            <td class="num">{{ admin.currencySymbol() }} {{ row.total }}</td>
+            <td>
+              <div class="reservation-actions">
+                @if (row.status === 'Pendiente') {
+                  <button class="btn" (click)="confirm(row)">Confirmar</button>
+                }
+                @if (row.status === 'Confirmada') {
+                  <button class="btn" (click)="checkIn(row)">Check-in</button>
+                }
+                @if (row.status === 'En curso') {
+                  <button class="btn" (click)="checkOut(row)">Check-out</button>
+                }
+                <button class="btn" (click)="openCompanions(row)">Acompañantes</button
+                ><button class="btn" (click)="openExtras(row)">Extras</button
+                ><button class="btn" (click)="openForm(row)">Editar</button>
+                @if (row.status === 'Pendiente' || row.status === 'Confirmada') {
+                  <button class="btn" (click)="cancel(row)">Cancelar</button>
+                }
+                <button class="btn btn-danger" (click)="askDelete(row)">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="7" class="empty">No se encontraron reservas.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+@if (dialog() === 'form') {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog large-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reservation-form-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="reservation-form-title">
+          {{ selectedId() === null ? 'Nueva reserva' : 'Editar reserva' }}
+        </h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <div class="form-grid">
+          <label class="form-field"
+            >Huésped<select class="field" formControlName="guest">
+              <option value="">Seleccionar</option>
+              @for (guest of store.guests(); track guest.id) {
+                <option [value]="guest.name">{{ guest.name }}</option>
+              }
+            </select></label
+          ><label class="form-field"
+            >Habitación<select class="field" formControlName="room">
+              <option value="">Seleccionar</option>
+              @for (room of store.rooms(); track room.id) {
+                <option [value]="room.number">{{ room.number }} · {{ room.type }}</option>
+              }
+            </select></label
+          ><label class="form-field"
+            >Modalidad<select class="field" formControlName="mode">
+              <option>Noche</option>
+              <option>Horas</option>
+            </select></label
+          ><label class="form-field"
+            >Entrada<input class="field" type="date" formControlName="startDate" /></label
+          ><label class="form-field"
+            >Hora de ingreso<input class="field" type="time" formControlName="startTime"
+          /></label>
+          @if (form.controls.mode.value === 'Horas') {
+            <label class="form-field"
+              >Bloque<select class="field" formControlName="durationHours">
+                <option [ngValue]="2">2 horas</option>
+                <option [ngValue]="3">3 horas</option>
+                <option [ngValue]="4">4 horas</option>
+                <option [ngValue]="6">6 horas</option>
+              </select></label
+            >
+          } @else {
+            <label class="form-field"
+              >Salida<input class="field" type="date" formControlName="endDate"
+            /></label>
+          }
+          <fieldset class="form-field full extras">
+            <legend>Extras</legend>
+            <label><input type="checkbox" formControlName="breakfast" /> Desayuno</label
+            ><label><input type="checkbox" formControlName="parking" /> Cochera</label
+            ><label><input type="checkbox" formControlName="spa" /> Spa</label>
+          </fieldset>
+        </div>
+        <div class="split-line">
+          <span>Total estimado</span
+          ><strong>{{ admin.currencySymbol() }} {{ estimatedTotal() }}</strong>
+        </div>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Guardar reserva</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (dialog() === 'companions' && selected(); as row) {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="companions-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="companions-title">Acompañantes · {{ row.code }}</h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="companion-list">
+        @for (item of companions(row); track $index) {
+          <div>
+            <span>{{ item.name }} · {{ item.document }} · {{ item.relationship }}</span
+            ><button class="btn btn-danger" (click)="removeCompanion($index)">Quitar</button>
+          </div>
+        } @empty {
+          <p class="inline-note">Aún no hay acompañantes.</p>
+        }
+      </div>
+      <form [formGroup]="companionForm" (ngSubmit)="addCompanion()">
+        <div class="form-grid">
+          <label class="form-field">Nombre<input class="field" formControlName="name" /></label
+          ><label class="form-field"
+            >Documento<input class="field" formControlName="document" /></label
+          ><label class="form-field full"
+            >Parentesco<select class="field" formControlName="relationship">
+              <option>Familiar</option>
+              <option>Cónyuge</option>
+              <option>Amigo/a</option>
+              <option>Otro</option>
+            </select></label
+          >
+        </div>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cerrar</button
+          ><button class="btn btn-primary" type="submit">Agregar acompañante</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (dialog() === 'extras' && selected(); as row) {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="extras-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="dialog-head">
+        <h2 id="extras-title">Agregar extra · {{ row.code }}</h2>
+        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      <p class="inline-note">{{ row.extras.join(', ') || 'Sin extras registrados' }}</p>
+      <form [formGroup]="extraForm" (ngSubmit)="addExtra()">
+        <div class="form-grid">
+          <label class="form-field"
+            >Producto o servicio<select class="field" formControlName="itemId">
+              <option [ngValue]="0">Seleccionar</option>
+              @for (item of admin.catalog(); track item.id) {
+                @if (item.active) {
+                  <option [ngValue]="item.id">
+                    {{ item.name }} · {{ admin.currencySymbol() }} {{ item.price }}
+                  </option>
+                }
+              }
+            </select></label
+          ><label class="form-field"
+            >Cantidad<input class="field" type="number" min="1" formControlName="quantity"
+          /></label>
+        </div>
+        @if (error()) {
+          <p class="error" role="alert">{{ error() }}</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
+          ><button class="btn btn-primary" type="submit">Cargar extra</button>
+        </div>
+      </form>
+    </section>
+  </div>
+}
+@if (dialog() === 'delete' && selected(); as row) {
+  <div class="dialog-backdrop" (click)="dialog.set(null)">
+    <section
+      class="dialog"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="delete-reservation-title"
+      aria-describedby="delete-reservation-text"
+      (click)="$event.stopPropagation()"
+    >
+      <h2 id="delete-reservation-title">Eliminar {{ row.code }}</h2>
+      <p id="delete-reservation-text">
+        Se quitará la reserva. Si está en curso, la habitación pasará a limpieza.
+      </p>
+      <div class="dialog-actions">
+        <button class="btn" (click)="dialog.set(null)">Cancelar</button
+        ><button class="btn btn-danger" (click)="deleteSelected()">Eliminar reserva</button>
+      </div>
+    </section>
+  </div>
+}
