@@ -7,10 +7,12 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        project: ['.', 'backend']
     defaults:
       run:
-        working-directory: backend
+        working-directory: ${{ matrix.project }}
 
     steps:
       - name: Checkout repository

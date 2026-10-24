@@ -1,3 +1,9 @@
+import { RouterLink, ActivatedRoute } from '@angular/router';
+import { AnalyticsViewService } from '../../core/services/analytics-view.service';
+import { AnimatedNumberComponent } from '../../shared/motion/animated-number.component';
+import { TiltDirective } from '../../shared/motion/tilt.directive';
+import { BarChartComponent } from '../../shared/charts/bar-chart.component';
+import { DonutChartComponent } from '../../shared/charts/donut-chart.component';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
@@ -14,7 +20,7 @@ type FinanceDialog = 'cash' | 'movement' | 'receipt' | 'tax' | 'promotion' | 'me
 
 @Component({
   selector: 'app-finanzas',
-  imports: [ReactiveFormsModule, ModalFocusDirective],
+  imports: [ReactiveFormsModule, ModalFocusDirective, RouterLink, AnimatedNumberComponent, TiltDirective, BarChartComponent, DonutChartComponent],
   templateUrl: './finanzas.component.html',
   styles: [
     `
@@ -239,12 +245,26 @@ export class FinanzasComponent {
   readonly admin = inject(HotelAdminStore);
   private readonly fb = inject(FormBuilder);
   readonly periods: ReportPeriod[] = ['Hoy', 'Esta semana', 'Este mes', 'Rango personalizado'];
-  readonly period = signal<ReportPeriod>('Esta semana');
-  readonly rangeFrom = signal('');
-  readonly rangeTo = signal('');
+  readonly view = inject(AnalyticsViewService);
+  private readonly route = inject(ActivatedRoute);
+  readonly period = this.view.financePeriod;
+  readonly rangeFrom = this.view.financeFrom;
+  readonly rangeTo = this.view.financeTo;
+  readonly fromDashboard = this.route.snapshot.queryParamMap.get('source') === 'dashboard';
+  readonly incomeOnly = signal(this.route.snapshot.queryParamMap.get('incomeOnly') === 'true');
+  readonly selectedMethod = signal<string | null>(null);
+  readonly barData = computed(() => this.bars().map(row => ({ label: row.label, values: [row.lodging, row.consumption] })));
+  readonly methodData = computed(() => this.methodTotals().map(row => ({ name: row.method, value: row.amount, color: row.color })));
+  readonly movementDetails = computed(() => this.entries().filter(row =>
+    (!this.incomeOnly() || row.amount > 0) && (!this.selectedMethod() || row.method === this.selectedMethod())));
+  constructor() {
+    const period = this.route.snapshot.queryParamMap.get('period');
+    if (period && this.periods.includes(period as ReportPeriod)) this.period.set(period as ReportPeriod);
+  }
   readonly dialog = signal<FinanceDialog>(null);
   readonly editingPromo = signal<number | null>(null);
   readonly error = signal('');
+  readonly notice = signal('');
   readonly entries = computed(() =>
     entriesForPeriod(this.admin.ledger(), this.period(), this.rangeFrom(), this.rangeTo()),
   );
@@ -394,6 +414,7 @@ export class FinanzasComponent {
       this.store.cashOpen.set(true);
     }
     this.close();
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   saveMovement() {
     if (this.movementForm.invalid) {
@@ -408,6 +429,7 @@ export class FinanzasComponent {
       method: v.method,
     });
     this.close();
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   saveReceipt() {
     if (this.receiptForm.invalid) {
@@ -441,11 +463,13 @@ export class FinanzasComponent {
       sourceId: id,
     });
     this.close();
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   saveTax() {
     if (this.taxForm.invalid) return;
     this.admin.igv.set(this.taxForm.getRawValue().igv);
     this.close();
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   savePromotion() {
     if (this.promotionForm.invalid) {
@@ -460,6 +484,7 @@ export class FinanzasComponent {
         : rows.map((row) => (row.id === id ? { ...row, ...value } : row)),
     );
     this.close();
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   deletePromotion(id: number) {
     this.admin.promotions.update((rows) => rows.filter((row) => row.id !== id));
@@ -474,6 +499,7 @@ export class FinanzasComponent {
     this.admin.paymentMethods.update((rows) => [...rows, name]);
     this.methodForm.reset();
     this.close();
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   deleteMethod(method: PaymentMethod) {
     this.admin.paymentMethods.update((rows) => rows.filter((row) => row !== method));

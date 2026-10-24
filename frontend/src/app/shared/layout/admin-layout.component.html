@@ -1,12 +1,12 @@
 <div class="shell">
-  <aside class="sidebar" [class.open]="menuOpen()" aria-label="Navegación principal">
-    <div class="brand">
+  <aside id="main-sidebar" class="sidebar" [class.open]="menuOpen()" [attr.inert]="compact() && !menuOpen() ? '' : null" aria-label="Navegación principal">
+    <a class="brand" href="/inicio" (click)="auth.prepareHomeReload()" aria-label="Hotel Parda: volver al inicio y recargar">
       <span class="brand-mark" aria-hidden="true"><span>P</span></span
       ><span
         ><strong>{{ admin.profile().name }}</strong
         ><small>HOTEL · ADMINISTRACIÓN</small></span
       >
-    </div>
+    </a>
     <label class="nav-search">
       <i class="pi pi-search" aria-hidden="true"></i>
       <input
@@ -21,7 +21,7 @@
       @for (item of filteredNavigation(); track item.path) {
         <a
           [routerLink]="item.path"
-          routerLinkActive="active"
+          routerLinkActive="active" ariaCurrentWhenActive="page"
           [routerLinkActiveOptions]="{ exact: true }"
           (click)="menuOpen.set(false)"
           ><span class="nav-icon"><i [class]="item.icon" aria-hidden="true"></i></span
@@ -53,6 +53,7 @@
           type="button"
           [attr.aria-expanded]="menuOpen()"
           aria-label="Abrir menú"
+          aria-controls="main-sidebar"
           (click)="menuOpen.update((v) => !v)"
         >
           <i class="pi pi-bars" aria-hidden="true"></i></button
@@ -90,7 +91,7 @@
             ><i class="pi pi-angle-down" aria-hidden="true"></i>
           </button>
           @if (profileOpen()) {
-            <div class="profile-dropdown">
+            <div class="profile-dropdown" animate.leave="parda-dialog-leave">
               <strong>{{ auth.currentUser()?.nombres }}</strong
               ><small>{{ auth.role() }} · {{ auth.activeTurno()?.name }}</small
               ><button type="button" (click)="profileOpen.set(false); profileDetails.set(true)">
@@ -102,11 +103,16 @@
         </div>
       </div>
     </header>
-    <main id="main-content" class="main-content"><router-outlet></router-outlet></main>
+    <main id="main-content" class="main-content">
+      <router-outlet></router-outlet>
+      <p class="integration-note" role="note">Integración parcial: Reservas y Huéspedes consultan la API. Dashboard, Recepción,
+        Habitaciones, Servicios, Finanzas y Personal conservan funciones de demostración.
+        Los cobros y comprobantes de demostración no representan operaciones reales.</p>
+    </main>
   </div>
 </div>
 @if (profileDetails()) {
-  <div class="dialog-backdrop" (click)="profileDetails.set(false)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="profileDetails.set(false)">
     <section
       class="dialog"
       role="dialog"
@@ -133,7 +139,7 @@
   </div>
 }
 @if (settingsOpen()) {
-  <div class="dialog-backdrop" (click)="settingsOpen.set(false)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="settingsOpen.set(false)">
     <section
       class="dialog"
       role="dialog"

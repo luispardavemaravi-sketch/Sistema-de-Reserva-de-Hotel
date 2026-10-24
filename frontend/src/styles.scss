@@ -1,4 +1,5 @@
 @use 'tailwindcss';
+@use './styles/motion';
 @import 'primeicons/primeicons.css';
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -51,6 +52,15 @@ a {
 .page {
   max-width: 1500px;
   margin: auto;
+}
+.main-content .integration-note {
+  max-width: 1000px;
+  margin: 32px auto 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
 }
 .page-head {
   display: flex;

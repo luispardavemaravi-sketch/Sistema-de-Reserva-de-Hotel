@@ -1,5 +1,6 @@
 ﻿import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { DestroyRef } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HotelDemoStore } from '../../core/demo/hotel-demo.store';
 import { HotelAdminStore } from '../../core/demo/hotel-admin.store';
@@ -10,10 +11,22 @@ import { AuthService } from '../../core/services/auth/auth.service';
 @Component({
   imports: [RouterOutlet, RouterLink, RouterLinkActive, ReactiveFormsModule, ModalFocusDirective],
   selector: 'app-admin-layout',
+  host: { '(document:keydown.escape)': 'menuOpen.set(false)' },
   styleUrl: './admin-layout.component.scss',
   templateUrl: './admin-layout.component.html',
 })
 export class AdminLayoutComponent {
+  constructor() {
+    // Restore shift labels after a full page refresh as well as after login.
+    void this.auth.loadTurnos().catch(() => undefined);
+    if (typeof matchMedia !== 'undefined') {
+      const media = matchMedia('(max-width: 1080px)');
+      const update = () => this.compact.set(media.matches);
+      update();
+      media.addEventListener('change', update);
+      inject(DestroyRef).onDestroy(() => media.removeEventListener('change', update));
+    }
+  }
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly profileOpen = signal(false);
@@ -31,6 +44,7 @@ export class AdminLayoutComponent {
   protected readonly theme = inject(ThemeService);
   private readonly fb = inject(FormBuilder);
   protected readonly menuOpen = signal(false);
+  protected readonly compact = signal(false);
   protected readonly navQuery = signal('');
   protected readonly settingsOpen = signal(false);
   protected readonly settingsError = signal('');
@@ -59,6 +73,7 @@ export class AdminLayoutComponent {
     this.settingsOpen.set(false);
   }
   protected readonly navigation = [
+    { path: '/inicio', label: 'Inicio', icon: 'pi pi-home' },
     { path: '/dashboard', label: 'Resumen general', icon: 'pi pi-chart-bar' },
     { path: '/recepcion', label: 'Recepción', icon: 'pi pi-th-large' },
     { path: '/reservas', label: 'Reservas', icon: 'pi pi-calendar' },

@@ -1,0 +1,155 @@
+ <section class="page analytics-page">
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">DATOS DE DEMOSTRACIÓN</p>
+        <h1>Resumen general</h1>
+        <p>{{ admin.profile().name }} · {{ dateLabel }}</p>
+      </div>
+      <a class="btn btn-primary" routerLink="/recepcion"
+        ><i class="pi pi-th-large" aria-hidden="true"></i> Abrir recepción</a
+      >
+    </div>
+    <div class="kpi-grid">
+      <button type="button" class="kpi featured kpi-action" (click)="revenueOpen.set(!revenueOpen())" [attr.aria-expanded]="revenueOpen()" aria-controls="income-detail" pardaTooltip="Ver movimientos de demostración que componen los ingresos de hoy.">
+        <div class="kpi-top">
+          <span>Ingresos de hoy</span><i class="pi pi-wallet" aria-hidden="true"></i>
+        </div>
+        <strong><app-animated-number [value]="todayRevenue()" [prefix]="admin.currencySymbol() + ' '" [decimals]="2" /></strong>
+        <p>
+          <span class="trend" [class.down]="revenueChange() < 0"
+            >{{ revenueChange() >= 0 ? '+' : '' }}{{ revenueChange() }}%</span
+          >
+          frente a ayer
+        </p>
+      </button>
+      <article class="kpi" tabindex="0" pardaTooltip="Habitaciones ocupadas en la fuente operativa actual.">
+        <div class="kpi-top">
+          <span>Habitaciones en uso</span><i class="pi pi-key" aria-hidden="true"></i>
+        </div>
+        <strong><app-animated-number [value]="store.occupied()" /></strong>
+        <p>{{ hoursInUse() }} por horas · {{ nightInUse() }} por noche</p>
+      </article>
+      <article class="kpi" tabindex="0" pardaTooltip="Movimientos de alojamiento de hoy; datos de demostración.">
+        <div class="kpi-top">
+          <span>Rotación del día</span><i class="pi pi-sync" aria-hidden="true"></i>
+        </div>
+        <strong><app-animated-number [value]="todayStays()" /></strong>
+        <p>Ocupaciones registradas hoy</p>
+      </article>
+      <article class="kpi" tabindex="0" pardaTooltip="Habitaciones disponibles en la misma fuente que Recepción.">
+        <div class="kpi-top">
+          <span>Disponibles</span><i class="pi pi-check-circle" aria-hidden="true"></i>
+        </div>
+        <strong><app-animated-number [value]="store.available()" /></strong>
+        <p>{{ store.cleaning() }} en limpieza · {{ store.rooms().length }} habitaciones</p>
+      </article>
+    </div>
+    @if (revenueOpen()) {
+      <section class="card movement-detail" id="income-detail" aria-labelledby="income-title" animate.enter="parda-row-enter">
+        <div class="section-heading">
+          <div><h2 id="income-title">Ingresos de hoy · demostración</h2><p>Estos movimientos aún no están conectados a cobros de PostgreSQL.</p></div>
+          @if (auth.canAccess('finanzas')) {
+            <a class="btn" routerLink="/finanzas" [queryParams]="{ period: 'Hoy', source: 'dashboard', incomeOnly: 'true' }">Abrir en Finanzas <i class="pi pi-arrow-right" aria-hidden="true"></i></a>
+          }
+        </div>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>Movimiento</th><th>Método</th><th class="num">Importe</th></tr></thead><tbody>
+          @for (entry of incomeToday(); track entry.id) {
+            <tr animate.enter="parda-row-enter"><td>{{ entry.description }}</td><td>{{ entry.method }}</td><td class="num">{{ admin.currencySymbol() }} {{ entry.amount }}</td></tr>
+          } @empty { <tr><td colspan="3">No hay ingresos para hoy.</td></tr> }
+        </tbody></table></div>
+      </section>
+    }
+    <div class="dashboard-grid">
+      <section class="card chart-card">
+        <div class="section-heading">
+          <div>
+            <h2>Ingresos por modalidad</h2>
+            <p>Alquileres por horas y por noche</p>
+          </div>
+          <div class="segmented" role="group" aria-label="Periodo del gráfico">
+            @for (period of periods; track period) {
+              <button
+                type="button"
+                [class.active]="selectedPeriod() === period"
+                [attr.aria-pressed]="selectedPeriod() === period"
+                (click)="selectedPeriod.set(period)"
+              >
+                {{ period }}
+              </button>
+            }
+          </div>
+        </div>
+        <app-bar-chart [data]="barData()" [series]="['Por horas', 'Por noche']" [currency]="admin.currencySymbol()" label="Ingresos por modalidad de demostración" />
+      </section>
+      <section class="card yield-card">
+        <div class="section-heading">
+          <div>
+            <h2>Rentabilidad por tipo</h2>
+            <p>Margen estimado del período · datos de demostración</p>
+          </div>
+        </div>
+        <app-donut-chart [data]="profitData()" [currency]="admin.currencySymbol()" label="Margen estimado de demostración por tipo" centerLabel="Margen estimado"
+          [selected]="view.selectedType()" (selectionChange)="view.selectedType.set($event)" />
+        @if (view.selectedType()) {
+          <div class="movement-detail" animate.enter="parda-row-enter">
+            <h3>{{ view.selectedType() }} · detalle de demostración</h3>
+            <p class="small muted">Importes de alojamiento antes del costo por estadía.</p>
+            @for (entry of profitDetail(); track entry.id) {
+              <p class="yield-row"><span>{{ entry.description }} · {{ entry.date }}</span><strong>{{ admin.currencySymbol() }} {{ entry.amount }}</strong></p>
+            } @empty { <p class="empty">Sin movimientos en este período.</p> }
+          </div>
+        }
+      </section>
+    </div>
+    <div class="dashboard-grid lower">
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Mapa rápido</h2>
+            <p>Estado actual de cada habitación</p>
+          </div>
+          <a routerLink="/recepcion" class="text-link"
+            >Ver rack completo <i class="pi pi-arrow-right" aria-hidden="true"></i
+          ></a>
+        </div>
+        <div class="mini-rack">
+          @for (room of store.rooms(); track room.id) {
+            <a routerLink="/recepcion" [class]="'mini-room state-' + room.status.toLowerCase()"
+              ><strong>{{ room.number }}</strong
+              ><span>{{ room.status }}</span></a
+            >
+          }
+        </div>
+        <div class="chart-legend">
+          <span><i class="legend-available"></i> Disponible</span
+          ><span><i class="legend-occupied"></i> Ocupada</span
+          ><span><i class="legend-cleaning"></i> Limpieza</span
+          ><span><i class="legend-maintenance"></i> Mantenimiento</span>
+        </div>
+      </section>
+      <section class="card">
+        <div class="section-heading">
+          <div>
+            <h2>Habitaciones por vencer</h2>
+            <p>Estadías por horas con salida próxima</p>
+          </div>
+          <span class="badge badge-amber">{{ expiring().length }} activas</span>
+        </div>
+        @for (room of expiring(); track room.id) {
+          <div class="due-row">
+            <div>
+              <strong>Hab. {{ room.number }}</strong
+              ><small>{{ room.guest }} · {{ room.stay?.durationHours }} horas</small>
+            </div>
+            <span class="due-time">{{ remaining(room) }}</span>
+            <div class="due-actions">
+              <button class="btn" (click)="addHour(room)">+ Hora extra</button
+              ><button class="btn" (click)="finish(room)">Finalizar y liberar</button>
+            </div>
+          </div>
+        } @empty {
+          <p class="empty">No hay habitaciones por horas próximas a vencer.</p>
+        }
+      </section>
+    </div>
+  </section>

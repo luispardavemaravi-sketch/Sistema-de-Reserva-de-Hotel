@@ -1,3 +1,7 @@
+import { AnimatedNumberComponent } from '../../shared/motion/animated-number.component';
+import { LoadingSkeletonComponent } from '../../shared/components/loading-skeleton.component';
+import { StatusPulseDirective } from '../../shared/motion/status-pulse.directive';
+import { TiltDirective } from '../../shared/motion/tilt.directive';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HotelAdminStore } from '../../core/demo/hotel-admin.store';
@@ -11,7 +15,7 @@ type ReservationDialog = 'form' | 'companions' | 'extras' | 'delete' | null;
 
 @Component({
   selector: 'app-reservas',
-  imports: [ReactiveFormsModule, ModalFocusDirective],
+  imports: [AnimatedNumberComponent, LoadingSkeletonComponent, StatusPulseDirective, TiltDirective, ReactiveFormsModule, ModalFocusDirective],
   templateUrl: './reservas.component.html',
   styles: [
     `
@@ -116,6 +120,8 @@ export class ReservasComponent {
   private backendRooms: BackendRoom[] = [];
   private backendGuests: BackendGuest[] = [];
   readonly loading = signal(true);
+  readonly saving = signal(false);
+  readonly notice = signal('');
   private readonly fb = inject(FormBuilder);
   readonly tabs = ['Todas', 'Pendiente', 'Confirmada', 'En curso', 'Finalizada', 'Cancelada'];
   readonly filter = signal('Todas');
@@ -295,6 +301,7 @@ export class ReservasComponent {
     return this.roomPrice() + (v.breakfast ? 28 : 0) + (v.parking ? 30 : 0) + (v.spa ? 130 : 0);
   }
   async save() {
+    if (this.saving()) return;
     if (this.form.invalid) {
       this.error.set('Complete huésped, habitación y fecha.');
       return;
@@ -324,25 +331,32 @@ export class ReservasComponent {
       this.error.set('Seleccione un huésped y una habitación existentes.');
       return;
     }
+    const body = { idHuesped: guestId, idHabitacion: roomId,
+      fechaEntradaPlanificada: v.startDate, fechaSalidaPlanificada: v.endDate };
+    await this.perform(() => firstValueFrom(id === null ? this.api.create(body) : this.api.update(id, body)),
+      'Reserva guardada por el servidor.', true);
+  }
+  private async perform(operation: () => Promise<unknown>, message: string, close = false) {
+    if (this.saving()) return;
+    this.saving.set(true);
+    this.error.set('');
+    this.notice.set('');
     try {
-      const body = { idHuesped: guestId, idHabitacion: roomId,
-        fechaEntradaPlanificada: v.startDate, fechaSalidaPlanificada: v.endDate };
-      await firstValueFrom(id === null ? this.api.create(body) : this.api.update(id, body));
-      this.dialog.set(null);
+      await operation();
+      if (close) this.dialog.set(null);
+      this.notice.set(message);
       await this.refresh();
     } catch (error) { this.error.set(this.apiError(error)); }
+    finally { this.saving.set(false); }
   }
   async confirm(row: DemoReservation) {
-    try { await firstValueFrom(this.api.transition(row.id, 'confirmacion')); await this.refresh(); }
-    catch (error) { this.error.set(this.apiError(error)); }
+    await this.perform(() => firstValueFrom(this.api.transition(row.id, 'confirmacion')), 'Reserva confirmada por el servidor.');
   }
   async checkIn(row: DemoReservation) {
-    try { await firstValueFrom(this.api.transition(row.id, 'entrada')); await this.refresh(); }
-    catch (error) { this.error.set(this.apiError(error)); }
+    await this.perform(() => firstValueFrom(this.api.transition(row.id, 'entrada')), 'Check-in registrado por el servidor.');
   }
   async checkOut(row: DemoReservation) {
-    try { await firstValueFrom(this.api.transition(row.id, 'salida')); await this.refresh(); }
-    catch (error) { this.error.set(this.apiError(error)); }
+    await this.perform(() => firstValueFrom(this.api.transition(row.id, 'salida')), 'Check-out registrado por el servidor.');
   }
   openCompanions(row: DemoReservation) {
     this.selectedId.set(row.id);
@@ -375,11 +389,9 @@ export class ReservasComponent {
   async deleteSelected() {
     const row = this.selected();
     if (!row) return;
-    try { await firstValueFrom(this.api.cancel(row.id)); this.dialog.set(null); await this.refresh(); }
-    catch (error) { this.error.set(this.apiError(error)); }
+    await this.perform(() => firstValueFrom(this.api.cancel(row.id)), 'Reserva cancelada por el servidor.', true);
   }
   async cancel(row: DemoReservation) {
-    try { await firstValueFrom(this.api.cancel(row.id)); await this.refresh(); }
-    catch (error) { this.error.set(this.apiError(error)); }
+    await this.perform(() => firstValueFrom(this.api.cancel(row.id)), 'Reserva cancelada por el servidor.');
   }
 }

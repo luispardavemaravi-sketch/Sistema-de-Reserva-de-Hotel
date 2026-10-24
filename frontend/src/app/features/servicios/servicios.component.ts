@@ -1,3 +1,5 @@
+import { AnimatedNumberComponent } from '../../shared/motion/animated-number.component';
+import { TiltDirective } from '../../shared/motion/tilt.directive';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CatalogItem, HotelAdminStore } from '../../core/demo/hotel-admin.store';
@@ -7,7 +9,7 @@ import { AuthService } from '../../core/services/auth/auth.service';
 
 @Component({
   selector: 'app-servicios',
-  imports: [ReactiveFormsModule, ModalFocusDirective],
+  imports: [AnimatedNumberComponent, TiltDirective, ReactiveFormsModule, ModalFocusDirective],
   templateUrl: './servicios.component.html',
   styles: [
     `
@@ -81,6 +83,7 @@ export class ServiciosComponent {
   readonly editingArea = signal<string | null>(null);
   readonly selectedConsumption = signal<DemoConsumption | null>(null);
   readonly error = signal('');
+  readonly notice = signal('');
   readonly total = computed(() =>
     this.store
       .consumptions()
@@ -158,6 +161,7 @@ export class ServiciosComponent {
       sourceId: id,
     });
     this.dialog.set(null);
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   openCatalog(item?: CatalogItem) {
     if (!this.isAdmin()) return;
@@ -186,6 +190,7 @@ export class ServiciosComponent {
         : rows.map((row) => (row.id === id ? { ...row, ...value } : row)),
     );
     this.dialog.set(null);
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   deleteCatalog(id: number) {
     if (!this.isAdmin()) return;
@@ -217,6 +222,7 @@ export class ServiciosComponent {
         rows.map((item) => (item.area === old ? { ...item, area: name } : item)),
       );
     this.dialog.set(null);
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   deleteArea(area: string) {
     if (!this.isAdmin()) return;

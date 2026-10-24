@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/login", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/personal/turnos/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/turnos-disponibles").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/habitaciones/**").hasAnyRole("ADMINISTRADOR", "RECEPCIONISTA")
                         .requestMatchers("/api/reservas/check-in/**", "/api/reservas/check-out/**").denyAll()
                         .requestMatchers("/api/reservas/estado/**").hasRole("ADMINISTRADOR")
@@ -62,7 +62,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    UrlBasedCorsConfigurationSource corsConfigurationSource(@Value("${FRONTEND_ORIGIN:http://localhost:4200}") String origin) {
+    UrlBasedCorsConfigurationSource corsConfigurationSource(@Value("${FRONTEND_ORIGIN:http://localhost:4300}") String origin) {
         CorsConfiguration cors = new CorsConfiguration();
         cors.setAllowedOrigins(List.of(origin));
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

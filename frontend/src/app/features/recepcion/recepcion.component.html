@@ -1,4 +1,5 @@
 <section class="page">
+  @if (notice()) { <p class="success-message" role="status" animate.enter="parda-row-enter"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ notice() }}<button class="icon-btn" type="button" aria-label="Cerrar confirmación" (click)="notice.set('')"><i class="pi pi-times" aria-hidden="true"></i></button></p> }
   <p class="eyebrow">DATOS DE DEMOSTRACIÓN · Cambios temporales sin persistencia</p>
   <div class="page-head">
     <div>
@@ -27,10 +28,10 @@
       <h2>
         {{ floor.name }} <span>{{ countOnFloor(floor.number) }} habitaciones</span>
       </h2>
-      <div class="room-grid">
+      <div class="room-grid" animate.enter="parda-row-enter">
         @for (room of visibleRooms(); track room.id) {
           @if (room.floor === floor.number) {
-            <article [class]="'room-card status-' + room.status.toLowerCase()">
+            <article pardaTilt [class.room-selected]="selectedId() === room.id" [class]="'room-card status-' + room.status.toLowerCase()">
               <button class="room-open" type="button" (click)="open(room)">
                 <span class="room-top"
                   ><strong>{{ room.number }}</strong
@@ -38,7 +39,7 @@
                 ><span class="room-type"
                   >{{ room.type }} · desde {{ admin.currencySymbol() }} {{ rates(room).hours3 }} /
                   3h</span
-                ><span class="room-status">{{ room.status }}</span
+                ><span class="room-status" [pardaStatus]="room.status"><i aria-hidden="true" [class]="room.status === 'Disponible' ? 'pi pi-check-circle' : room.status === 'Ocupada' ? 'pi pi-user' : room.status === 'Limpieza' ? 'pi pi-sparkles' : 'pi pi-wrench'"></i>{{ room.status }}</span
                 ><span class="room-detail">{{ room.guest || 'Sin huésped' }}</span
                 ><span class="room-detail">{{ stayLabel(room) }}</span></button
               ><select
@@ -60,7 +61,7 @@
   }
 </section>
 @if (selected(); as room) {
-  <div class="dialog-backdrop" (click)="close()">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="close()">
     <section
       class="dialog control-dialog"
       role="dialog"

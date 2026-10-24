@@ -1,39 +1,41 @@
-<section class="page">
-  @if (loading()) { <p role="status">Cargando reservas…</p> }
+<section class="page" [attr.aria-busy]="loading() || saving()">
+  @if (notice()) { <p class="success-message" role="status" animate.enter="parda-row-enter"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ notice() }}<button [disabled]="saving()" class="icon-btn" type="button" aria-label="Cerrar confirmación" (click)="notice.set('')"><i class="pi pi-times" aria-hidden="true"></i></button></p> }
+  @if (loading()) { <app-loading-skeleton label="Cargando reservas…" /> }
+  @if (saving()) { <p role="status"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando solicitud…</p> }
   <div class="page-head">
     <div>
       <h1>Reservas</h1>
       <p>Alquileres por horas y noches, acompañantes y extras.</p>
     </div>
-    <button class="btn btn-primary" (click)="openForm()">
+    <button [disabled]="saving()" class="btn btn-primary" (click)="openForm()">
       <i class="pi pi-plus" aria-hidden="true"></i> Nueva reserva
     </button>
   </div>
   <div class="metrics">
     <div class="metric">
       <div class="metric-label">Activas</div>
-      <div class="metric-value">{{ activeCount() }}</div>
+      <div class="metric-value"><app-animated-number [value]="activeCount()" /></div>
       <div class="metric-note">Confirmadas y en curso</div>
     </div>
     <div class="metric">
       <div class="metric-label">Por confirmar</div>
-      <div class="metric-value">{{ pendingCount() }}</div>
+      <div class="metric-value"><app-animated-number [value]="pendingCount()" /></div>
       <div class="metric-note">Requieren atención</div>
     </div>
     <div class="metric">
       <div class="metric-label">Por horas</div>
-      <div class="metric-value">{{ hoursCount() }}</div>
+      <div class="metric-value"><app-animated-number [value]="hoursCount()" /></div>
       <div class="metric-note">Reservas de fracción</div>
     </div>
     <div class="metric">
       <div class="metric-label">Con extras</div>
-      <div class="metric-value">{{ extrasCount() }}</div>
+      <div class="metric-value"><app-animated-number [value]="extrasCount()" /></div>
       <div class="metric-note">Servicios asociados</div>
     </div>
   </div>
   <div class="tabs" role="tablist" aria-label="Estado de reservas">
     @for (tab of tabs; track tab) {
-      <button
+      <button [disabled]="saving()"
         role="tab"
         class="tab"
         [class.active]="filter() === tab"
@@ -71,7 +73,7 @@
       </thead>
       <tbody>
         @for (row of filtered(); track row.id) {
-          <tr>
+          <tr animate.enter="parda-row-enter">
             <td>
               <strong>{{ row.guest }}</strong
               ><span class="mode-tag mono">{{ row.code }}</span>
@@ -82,32 +84,32 @@
             </td>
             <td>{{ row.extras.join(', ') || '—' }}</td>
             <td>
-              <span [class]="badgeClass(row.status)">{{ row.status }}</span>
+              <span [pardaStatus]="row.status" [class]="badgeClass(row.status)">{{ row.status }}</span>
             </td>
             <td class="num">{{ admin.currencySymbol() }} {{ row.total }}</td>
             <td>
               <div class="reservation-actions">
                 @if (row.status === 'Pendiente') {
-                  <button class="btn" (click)="confirm(row)">Confirmar</button>
+                  <button [disabled]="saving()" class="btn" (click)="confirm(row)">Confirmar</button>
                 }
                 @if (row.status === 'Confirmada') {
-                  <button class="btn" (click)="checkIn(row)">Check-in</button>
+                  <button [disabled]="saving()" class="btn" (click)="checkIn(row)">Check-in</button>
                 }
                 @if (row.status === 'En curso') {
-                  <button class="btn" (click)="checkOut(row)">Check-out</button>
+                  <button [disabled]="saving()" class="btn" (click)="checkOut(row)">Check-out</button>
                 }
-                <button class="btn" (click)="openCompanions(row)">Acompañantes</button
-                ><button class="btn" (click)="openExtras(row)">Extras</button
-                ><button class="btn" (click)="openForm(row)">Editar</button>
+                <button [disabled]="saving()" class="btn" (click)="openCompanions(row)">Acompañantes</button
+                ><button [disabled]="saving()" class="btn" (click)="openExtras(row)">Extras</button
+                ><button [disabled]="saving()" class="btn" (click)="openForm(row)">Editar</button>
                 @if (row.status === 'Pendiente' || row.status === 'Confirmada') {
-                  <button class="btn" (click)="cancel(row)">Cancelar</button>
+                  <button [disabled]="saving()" class="btn" (click)="cancel(row)">Cancelar</button>
                 }
-                <button class="btn btn-danger" (click)="askDelete(row)">Eliminar</button>
+                <button [disabled]="saving()" class="btn btn-danger" (click)="askDelete(row)">Eliminar</button>
               </div>
             </td>
           </tr>
         } @empty {
-          <tr>
+          <tr animate.enter="parda-row-enter">
             <td colspan="7" class="empty">No se encontraron reservas.</td>
           </tr>
         }
@@ -116,7 +118,7 @@
   </div>
 </section>
 @if (dialog() === 'form') {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="!saving() && dialog.set(null)">
     <section
       class="dialog large-dialog"
       role="dialog"
@@ -128,7 +130,7 @@
         <h2 id="reservation-form-title">
           {{ selectedId() === null ? 'Nueva reserva' : 'Editar reserva' }}
         </h2>
-        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+        <button [disabled]="saving()" class="icon-btn" aria-label="Cerrar" (click)="!saving() && dialog.set(null)">
           <i class="pi pi-times" aria-hidden="true"></i>
         </button>
       </div>
@@ -187,15 +189,15 @@
           <p class="error" role="alert">{{ error() }}</p>
         }
         <div class="dialog-actions">
-          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
-          ><button class="btn btn-primary" type="submit">Guardar reserva</button>
+          <button [disabled]="saving()" class="btn" type="button" (click)="!saving() && dialog.set(null)">Cancelar</button
+          ><button [disabled]="saving()" class="btn btn-primary" type="submit">{{ saving() ? 'Guardando…' : 'Guardar reserva' }}</button>
         </div>
       </form>
     </section>
   </div>
 }
 @if (dialog() === 'companions' && selected(); as row) {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="!saving() && dialog.set(null)">
     <section
       class="dialog"
       role="dialog"
@@ -205,7 +207,7 @@
     >
       <div class="dialog-head">
         <h2 id="companions-title">Acompañantes · {{ row.code }}</h2>
-        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+        <button [disabled]="saving()" class="icon-btn" aria-label="Cerrar" (click)="!saving() && dialog.set(null)">
           <i class="pi pi-times" aria-hidden="true"></i>
         </button>
       </div>
@@ -213,7 +215,7 @@
         @for (item of companions(row); track $index) {
           <div>
             <span>{{ item.name }} · {{ item.document }} · {{ item.relationship }}</span
-            ><button class="btn btn-danger" (click)="removeCompanion($index)">Quitar</button>
+            ><button [disabled]="saving()" class="btn btn-danger" (click)="removeCompanion($index)">Quitar</button>
           </div>
         } @empty {
           <p class="inline-note">Aún no hay acompañantes.</p>
@@ -237,15 +239,15 @@
           <p class="error" role="alert">{{ error() }}</p>
         }
         <div class="dialog-actions">
-          <button class="btn" type="button" (click)="dialog.set(null)">Cerrar</button
-          ><button class="btn btn-primary" type="submit">Agregar acompañante</button>
+          <button [disabled]="saving()" class="btn" type="button" (click)="!saving() && dialog.set(null)">Cerrar</button
+          ><button [disabled]="saving()" class="btn btn-primary" type="submit">Agregar acompañante</button>
         </div>
       </form>
     </section>
   </div>
 }
 @if (dialog() === 'extras' && selected(); as row) {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="!saving() && dialog.set(null)">
     <section
       class="dialog"
       role="dialog"
@@ -255,7 +257,7 @@
     >
       <div class="dialog-head">
         <h2 id="extras-title">Agregar extra · {{ row.code }}</h2>
-        <button class="icon-btn" aria-label="Cerrar" (click)="dialog.set(null)">
+        <button [disabled]="saving()" class="icon-btn" aria-label="Cerrar" (click)="!saving() && dialog.set(null)">
           <i class="pi pi-times" aria-hidden="true"></i>
         </button>
       </div>
@@ -281,15 +283,15 @@
           <p class="error" role="alert">{{ error() }}</p>
         }
         <div class="dialog-actions">
-          <button class="btn" type="button" (click)="dialog.set(null)">Cancelar</button
-          ><button class="btn btn-primary" type="submit">Cargar extra</button>
+          <button [disabled]="saving()" class="btn" type="button" (click)="!saving() && dialog.set(null)">Cancelar</button
+          ><button [disabled]="saving()" class="btn btn-primary" type="submit">Cargar extra</button>
         </div>
       </form>
     </section>
   </div>
 }
 @if (dialog() === 'delete' && selected(); as row) {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="!saving() && dialog.set(null)">
     <section
       class="dialog"
       role="alertdialog"
@@ -303,8 +305,8 @@
         Se quitará la reserva. Si está en curso, la habitación pasará a limpieza.
       </p>
       <div class="dialog-actions">
-        <button class="btn" (click)="dialog.set(null)">Cancelar</button
-        ><button class="btn btn-danger" (click)="deleteSelected()">Eliminar reserva</button>
+        <button [disabled]="saving()" class="btn" (click)="!saving() && dialog.set(null)">Cancelar</button
+        ><button [disabled]="saving()" class="btn btn-danger" (click)="deleteSelected()">Eliminar reserva</button>
       </div>
     </section>
   </div>

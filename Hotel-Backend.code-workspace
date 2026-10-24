@@ -1,0 +1,17 @@
+{
+  "folders": [
+    { "name": "backend", "path": "backend" },
+    { "name": "frontend", "path": "frontend" }
+  ],
+  "settings": {
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.import.maven.enabled": true,
+    "java.configuration.runtimes": [
+      {
+        "name": "JavaSE-21",
+        "path": "C:\\Program Files\\BellSoft\\LibericaJDK-21",
+        "default": true
+      }
+    ]
+  }
+}

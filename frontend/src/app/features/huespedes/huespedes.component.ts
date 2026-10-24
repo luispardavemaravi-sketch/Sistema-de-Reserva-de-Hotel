@@ -1,3 +1,4 @@
+import { LoadingSkeletonComponent } from '../../shared/components/loading-skeleton.component';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DemoGuest, HotelDemoStore } from '../../core/demo/hotel-demo.store';
@@ -10,16 +11,18 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
 
 @Component({
   selector: 'app-huespedes',
-  imports: [ReactiveFormsModule, ModalFocusDirective],
-  template: ` <section class="page">
-    @if (loading()) { <p role="status">Cargando huéspedes…</p> }
+  imports: [LoadingSkeletonComponent, ReactiveFormsModule, ModalFocusDirective],
+  template: ` <section class="page" [attr.aria-busy]="loading() || saving()">
+  @if (notice()) { <p class="success-message" role="status" animate.enter="parda-row-enter"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ notice() }}<button [disabled]="saving()" class="icon-btn" type="button" aria-label="Cerrar confirmación" (click)="notice.set('')"><i class="pi pi-times" aria-hidden="true"></i></button></p> }
+    @if (loading()) { <app-loading-skeleton label="Cargando huespedes…" /> }
     @if (error() && !dialogOpen()) { <p class="error" role="alert">{{ error() }}</p> }
-    <div class="page-head">
+    @if (saving()) { <p role="status"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Procesando solicitud…</p> }
+  <div class="page-head">
       <div>
         <h1>Huéspedes</h1>
         <p>Directorio de personas y datos de contacto.</p>
       </div>
-      <button class="btn btn-primary" (click)="openNew()">
+      <button [disabled]="saving()" class="btn btn-primary" (click)="openNew()">
         <i class="pi pi-plus" aria-hidden="true"></i> Nuevo huésped
       </button>
     </div>
@@ -46,7 +49,7 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
         </thead>
         <tbody>
           @for (guest of filtered(); track guest.id) {
-            <tr>
+            <tr animate.enter="parda-row-enter">
               <td>
                 <strong>{{ guest.name }}</strong>
               </td>
@@ -55,12 +58,12 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
               <td>{{ guest.email }}</td>
               <td class="num">{{ guest.stays }}</td>
               <td>
-                <button class="btn" (click)="openEdit(guest)">Editar</button>
-                <button class="btn btn-danger" (click)="askDelete(guest)">Eliminar</button>
+                <button [disabled]="saving()" class="btn" (click)="openEdit(guest)">Editar</button>
+                <button [disabled]="saving()" class="btn btn-danger" (click)="askDelete(guest)">Eliminar</button>
               </td>
             </tr>
           } @empty {
-            <tr>
+            <tr animate.enter="parda-row-enter">
               <td colspan="6" class="empty">No se encontraron huéspedes.</td>
             </tr>
           }
@@ -68,7 +71,7 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
       </table>
     </div>
     @if (dialogOpen()) {
-      <div class="dialog-backdrop" (click)="dialogOpen.set(false)">
+      <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="!saving() && dialogOpen.set(false)">
         <section
           class="dialog"
           role="dialog"
@@ -78,7 +81,7 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
         >
           <div class="dialog-head">
             <h2 id="guest-dialog-title">{{ editing() ? 'Editar huésped' : 'Nuevo huésped' }}</h2>
-            <button class="icon-btn" aria-label="Cerrar" (click)="dialogOpen.set(false)">
+            <button [disabled]="saving()" class="icon-btn" aria-label="Cerrar" (click)="!saving() && dialogOpen.set(false)">
               <i class="pi pi-times" aria-hidden="true"></i>
             </button>
           </div>
@@ -102,15 +105,15 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
               <p class="error" role="alert">{{ error() }}</p>
             }
             <div class="dialog-actions">
-              <button type="button" class="btn" (click)="dialogOpen.set(false)">Cancelar</button
-              ><button type="submit" class="btn btn-primary">Guardar huésped</button>
+              <button [disabled]="saving()" type="button" class="btn" (click)="!saving() && dialogOpen.set(false)">Cancelar</button
+              ><button [disabled]="saving()" type="submit" class="btn btn-primary">{{ saving() ? 'Guardando…' : 'Guardar huésped' }}</button>
             </div>
           </form>
         </section>
       </div>
     }
     @if (deleting(); as guest) {
-      <div class="dialog-backdrop" (click)="deleting.set(null)">
+      <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="!saving() && deleting.set(null)">
         <section
           class="dialog"
           role="alertdialog"
@@ -124,8 +127,8 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
             Se quitará a {{ guest.name }} del directorio del hotel.
           </p>
           <div class="dialog-actions">
-            <button class="btn" (click)="deleting.set(null)">Cancelar</button
-            ><button class="btn btn-danger" (click)="deleteGuest(guest)">Eliminar</button>
+            <button [disabled]="saving()" class="btn" (click)="!saving() && deleting.set(null)">Cancelar</button
+            ><button [disabled]="saving()" class="btn btn-danger" (click)="deleteGuest(guest)">Eliminar</button>
           </div>
         </section>
       </div>
@@ -151,6 +154,8 @@ export class HuespedesComponent {
   readonly deleting = signal<DemoGuest | null>(null);
   readonly error = signal('');
   readonly loading = signal(true);
+  readonly saving = signal(false);
+  readonly notice = signal('');
   constructor() { void this.refresh(); }
   private toView(guest: HuespedResponseDTO): DemoGuest {
     return { id: guest.idHuesped, name: `${guest.nombre} ${guest.apellidos}`.trim(),
@@ -211,6 +216,7 @@ export class HuespedesComponent {
     this.deleting.set(guest);
   }
   async save() {
+    if (this.saving()) return;
     if (this.form.invalid) {
       this.error.set('Complete los campos y escriba un correo válido.');
       return;
@@ -224,17 +230,28 @@ export class HuespedesComponent {
     }
     const body = { nombre: parts.slice(0, -1).join(' '), apellidos: parts.at(-1)!,
       documentoIdentidad: value.document, email: value.email, telefono: value.phone };
+    this.saving.set(true);
+    this.notice.set('');
+    this.error.set('');
     try {
       await firstValueFrom(editing ? this.api.update(editing.id, body) : this.api.create(body));
       this.dialogOpen.set(false);
+      this.notice.set('Huésped guardado por el servidor.');
       await this.refresh();
     } catch (error) { this.error.set(this.apiError(error)); }
+    finally { this.saving.set(false); }
   }
   async deleteGuest(guest: DemoGuest) {
+    if (this.saving()) return;
+    this.saving.set(true);
+    this.notice.set('');
+    this.error.set('');
     try {
       await firstValueFrom(this.api.delete(guest.id));
       this.deleting.set(null);
+      this.notice.set('Huésped eliminado por el servidor.');
       await this.refresh();
     } catch (error) { this.error.set(this.apiError(error)); }
+    finally { this.saving.set(false); }
   }
 }

@@ -131,7 +131,7 @@ public class TurnoServiceImpl implements TurnoService {
                 entidad.getIdTurno(),
                 entidad.getHoraInicio(),
                 entidad.getHoraFinal(),
-                entidad.getDiasSemana()
+                java.util.Set.copyOf(entidad.getDiasSemana())
         );
     }
 }

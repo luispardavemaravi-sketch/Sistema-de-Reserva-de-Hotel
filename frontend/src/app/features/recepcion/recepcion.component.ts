@@ -1,3 +1,5 @@
+import { StatusPulseDirective } from '../../shared/motion/status-pulse.directive';
+import { TiltDirective } from '../../shared/motion/tilt.directive';
 import { isPlatformBrowser } from '@angular/common';
 import { Component, computed, DestroyRef, inject, PLATFORM_ID, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -7,7 +9,7 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
 
 @Component({
   selector: 'app-recepcion',
-  imports: [ReactiveFormsModule, ModalFocusDirective],
+  imports: [StatusPulseDirective, TiltDirective, ReactiveFormsModule, ModalFocusDirective],
   templateUrl: './recepcion.component.html',
   styles: [
     `
@@ -226,6 +228,7 @@ export class RecepcionComponent {
   );
   readonly activeAction = signal<'consumo' | 'mover' | null>(null);
   readonly error = signal('');
+  readonly notice = signal('');
   readonly walkInForm = this.fb.nonNullable.group({
     mode: ['Horas'],
     durationHours: [3],
@@ -410,6 +413,7 @@ export class RecepcionComponent {
       ...rows,
     ]);
     this.close();
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   addConsumption(room: DemoRoom, item: CatalogItem, quantity: number, method: string) {
     const id = Math.max(0, ...this.store.consumptions().map((row) => row.id)) + 1;

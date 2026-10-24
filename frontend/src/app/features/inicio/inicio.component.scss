@@ -1,0 +1,70 @@
+:host { display: block; }
+.welcome-page {
+  position: relative;
+  isolation: isolate;
+  min-height: calc(100dvh - 160px);
+  padding: clamp(24px, 5vh, 64px) 20px 32px;
+  overflow: hidden;
+}
+.welcome-content { position: relative; max-width: 800px; margin: auto; }
+.welcome-card {
+  width: min(100%, 450px);
+  margin: 0 auto 24px;
+  padding: 40px 36px 30px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--topbar);
+  text-align: center;
+}
+.hotel-identity { display: grid; justify-items: center; }
+.hotel-mark {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  margin: 10px 0 32px;
+  transform: rotate(45deg);
+  border: 1px solid #8bbfff;
+  border-radius: 23px;
+  background: #4e75f4;
+  box-shadow: inset -19px -19px 0 #244ed4;
+}
+.hotel-mark span { transform: rotate(-45deg); font-size: 52px; font-weight: 800; color: #fff; line-height: 1; }
+.hotel-name { margin: 0; color: var(--ink); font-size: 28px; font-weight: 700; letter-spacing: .04em; overflow-wrap: anywhere; }
+.hotel-caption { margin: 7px 0 28px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .2em; }
+h1 { margin: 0; font-size: clamp(25px, 2.4vw, 30px); line-height: 1.3; font-weight: 800; letter-spacing: -.03em; text-wrap: balance; overflow-wrap: anywhere; }
+h1 span { color: var(--login-accent); }
+.welcome-subtitle { margin: 10px 0 28px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.quick-guide { border: 1px solid var(--line); background: var(--raised); border-radius: 14px; text-align: left; }
+summary { display: flex; align-items: center; gap: 14px; min-height: 78px; padding: 14px 16px; cursor: pointer; list-style: none; border-radius: 14px; }
+summary::-webkit-details-marker { display: none; }
+summary > span:nth-child(2) { flex: 1; }
+summary strong { display: block; font-size: 14px; }
+summary small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.guide-icon, .shortcut-icon { display: grid; place-items: center; flex: none; width: 46px; height: 46px; border-radius: 12px; background: var(--accent-soft); color: var(--login-accent); font-size: 22px; }
+.guide-arrow { color: var(--login-accent); font-size: 13px; }
+details[open] .guide-arrow { transform: rotate(90deg); }
+.guide-content { border-top: 1px solid var(--line); padding: 0 18px 8px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.quick-access h2 { display: flex; align-items: center; gap: 9px; margin: 0 0 16px; padding-bottom: 13px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.quick-access h2 i { font-size: 11px; }
+.shortcut-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.shortcut { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 9px; min-height: 140px; padding: 22px 10px 17px; border: 1px solid var(--line); border-radius: 16px; background: var(--topbar); color: var(--ink); text-align: center; }
+.shortcut strong { font-size: 12px; line-height: 1.5; }
+.shortcut small { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.shortcut:hover, summary:hover { background: var(--raised); }
+.shortcut:hover { border-color: var(--login-accent); }
+.welcome-lines { position: absolute; inset: 0; z-index: -1; display: flex; justify-content: space-around; pointer-events: none; opacity: .5; }
+.welcome-lines span { position: relative; width: 1px; height: 70%; background: var(--line); }
+.welcome-lines span::after { content: ''; position: absolute; bottom: -9px; left: -2px; width: 5px; height: 5px; border-radius: 50%; background: var(--line); box-shadow: 0 8px 0 var(--line), 0 16px 0 var(--line); }
+.welcome-lines span:nth-child(3n) { height: 88%; }
+.welcome-lines span:nth-child(3n + 1) { height: 56%; }
+.welcome-lines span:nth-child(even) { align-self: end; }
+@media (max-width: 700px) {
+  .welcome-page { padding: 20px 0; }
+  .welcome-card { padding: 30px 22px 24px; }
+  .shortcut-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .shortcut { min-height: 136px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .shortcut { transition: border-color .15s ease, background-color .15s ease; }
+}

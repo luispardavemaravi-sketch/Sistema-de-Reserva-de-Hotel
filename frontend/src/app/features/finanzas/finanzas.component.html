@@ -1,4 +1,5 @@
 <section class="page">
+  @if (notice()) { <p class="success-message" role="status" animate.enter="parda-row-enter"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ notice() }}<button class="icon-btn" type="button" aria-label="Cerrar confirmación" (click)="notice.set('')"><i class="pi pi-times" aria-hidden="true"></i></button></p> }
   <p class="eyebrow">DATOS DE DEMOSTRACIÓN · Sin cobros verificados</p>
   <div class="page-head">
     <div>
@@ -12,6 +13,9 @@
       </button>
     </div>
   </div>
+  @if (fromDashboard) {
+    <div class="finance-drilldown"><p>Ingresos de hoy · misma fuente de demostración que el dashboard.</p><a class="btn" routerLink="/dashboard">Volver al dashboard</a></div>
+  }
   <div class="period-bar" role="group" aria-label="Período financiero">
     @for (item of periods; track item) {
       <button
@@ -48,29 +52,29 @@
     >
   </div>
   <div class="finance-metrics">
-    <div class="card">
+    <div class="card" pardaTilt>
       <span class="metric-label">Ventas del período</span
-      ><strong>{{ admin.currencySymbol() }} {{ sales() }}</strong
+      ><strong><app-animated-number [value]="sales()" [prefix]="admin.currencySymbol() + ' '" [decimals]="2" /></strong
       ><small>Antes de gastos</small>
     </div>
-    <div class="card">
+    <div class="card" pardaTilt>
       <span class="metric-label">Ticket promedio</span
-      ><strong>{{ admin.currencySymbol() }} {{ averageTicket() }}</strong
+      ><strong><app-animated-number [value]="averageTicket()" [prefix]="admin.currencySymbol() + ' '" [decimals]="2" /></strong
       ><small>Por movimiento positivo</small>
     </div>
-    <div class="card">
+    <div class="card" pardaTilt>
       <span class="metric-label">Habitaciones</span
-      ><strong>{{ admin.currencySymbol() }} {{ lodging() }}</strong
+      ><strong><app-animated-number [value]="lodging()" [prefix]="admin.currencySymbol() + ' '" [decimals]="2" /></strong
       ><small>Por horas y noches</small>
     </div>
-    <div class="card">
+    <div class="card" pardaTilt>
       <span class="metric-label">Consumos</span
-      ><strong>{{ admin.currencySymbol() }} {{ consumption() }}</strong
+      ><strong><app-animated-number [value]="consumption()" [prefix]="admin.currencySymbol() + ' '" [decimals]="2" /></strong
       ><small>Servicios y productos</small>
     </div>
-    <div class="card">
+    <div class="card" pardaTilt>
       <span class="metric-label">Gastos</span
-      ><strong>{{ admin.currencySymbol() }} {{ expenses() }}</strong
+      ><strong><app-animated-number [value]="expenses()" [prefix]="admin.currencySymbol() + ' '" [decimals]="2" /></strong
       ><small>Salidas de caja</small>
     </div>
   </div>
@@ -82,29 +86,7 @@
           <p>Alojamiento frente a consumos y servicios</p>
         </div>
       </div>
-      <div class="finance-bars" role="img" [attr.aria-label]="chartLabel()">
-        @for (bar of bars(); track bar.label) {
-          <div class="finance-group">
-            <div class="finance-pair">
-              <i
-                class="lodging"
-                [style.height.%]="barHeight(bar.lodging)"
-                [attr.title]="bar.label + ' · Alojamiento ' + bar.lodging"
-              ></i
-              ><i
-                class="consumption"
-                [style.height.%]="barHeight(bar.consumption)"
-                [attr.title]="bar.label + ' · Consumos ' + bar.consumption"
-              ></i>
-            </div>
-            <span>{{ bar.label }}</span>
-          </div>
-        }
-      </div>
-      <div class="chart-legend">
-        <span><i style="background: #4d73f5"></i>Alojamiento</span
-        ><span><i style="background: #39a7e5"></i>Consumos</span>
-      </div>
+      <app-bar-chart [data]="barData()" [series]="['Alojamiento', 'Consumos']" [currency]="admin.currencySymbol()" label="Ventas de demostración por período" />
     </section>
     <section class="card">
       <div class="section-heading">
@@ -113,32 +95,15 @@
           <p>Distribución de ingresos del período</p>
         </div>
       </div>
-      <div
-        class="method-stack"
-        role="img"
-        [attr.aria-label]="'Distribución de ventas por método de pago'"
-      >
-        @for (item of methodTotals(); track item.method) {
-          <span
-            [style.width.%]="methodWidth(item.amount)"
-            [style.background]="item.color"
-            [attr.title]="item.method + ': ' + item.amount"
-          ></span>
-        }
-      </div>
-      @for (item of methodTotals(); track item.method) {
-        <div class="method-row">
-          <span><i [style.background]="item.color"></i>{{ item.method }}</span
-          ><strong>{{ admin.currencySymbol() }} {{ item.amount }}</strong>
-        </div>
-      }
+      <app-donut-chart [data]="methodData()" [currency]="admin.currencySymbol()" label="Métodos de pago de demostración"
+        [selected]="selectedMethod()" (selectionChange)="selectedMethod.set($event)" />
     </section>
   </div>
   <div class="subgrid">
     <section class="card">
       <div class="section-heading">
         <div>
-          <h2>Caja y movimientos</h2>
+          <h2>Caja y movimientos</h2><p>{{ selectedMethod() || 'Todos los métodos' }} · {{ incomeOnly() ? 'Solo ingresos' : 'Ingresos y gastos' }}</p>
           <p>
             {{ store.cashOpen() ? 'Caja abierta' : 'Caja cerrada' }} · saldo estimado
             {{ admin.currencySymbol() }} {{ cashBalance() }}
@@ -148,7 +113,7 @@
           {{ store.cashOpen() ? 'Cerrar caja' : 'Abrir caja' }}
         </button>
       </div>
-      <div class="action-row">
+      <div class="action-row"><button class="btn" [attr.aria-pressed]="incomeOnly()" (click)="incomeOnly.set(!incomeOnly())">{{ incomeOnly() ? 'Ver también gastos' : 'Ver solo ingresos' }}</button>
         <button class="btn" (click)="open('movement')">+ Registrar movimiento</button
         ><button class="btn" (click)="open('receipt')">+ Comprobante</button>
       </div>
@@ -163,8 +128,8 @@
             </tr>
           </thead>
           <tbody>
-            @for (entry of entries().slice(0, 8); track entry.id) {
-              <tr>
+            @for (entry of movementDetails(); track entry.id) {
+              <tr animate.enter="parda-row-enter">
                 <td>{{ entry.description }}</td>
                 <td class="mono">{{ entry.date }}</td>
                 <td>{{ entry.method }}</td>
@@ -178,7 +143,7 @@
                 </td>
               </tr>
             } @empty {
-              <tr>
+              <tr animate.enter="parda-row-enter">
                 <td colspan="4" class="empty">No hay movimientos en este período.</td>
               </tr>
             }
@@ -236,7 +201,7 @@
   </div>
 </section>
 @if (dialog()) {
-  <div class="dialog-backdrop" (click)="close()">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="close()">
     <section
       class="dialog"
       role="dialog"

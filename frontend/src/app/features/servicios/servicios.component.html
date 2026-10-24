@@ -1,4 +1,5 @@
 <section class="page">
+  @if (notice()) { <p class="success-message" role="status" animate.enter="parda-row-enter"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ notice() }}<button class="icon-btn" type="button" aria-label="Cerrar confirmación" (click)="notice.set('')"><i class="pi pi-times" aria-hidden="true"></i></button></p> }
   <p class="eyebrow">DATOS DE DEMOSTRACIÓN · Cambios temporales sin persistencia</p>
   <div class="page-head">
     <div>
@@ -15,22 +16,22 @@
   <div class="metrics">
     <div class="metric">
       <div class="metric-label">Cargos activos</div>
-      <div class="metric-value">{{ store.consumptions().length }}</div>
+      <div class="metric-value"><app-animated-number [value]="store.consumptions().length" /></div>
       <div class="metric-note">Historial de consumos</div>
     </div>
     <div class="metric">
       <div class="metric-label">Ingresos por consumos</div>
-      <div class="metric-value">{{ admin.currencySymbol() }} {{ total() }}</div>
+      <div class="metric-value"><app-animated-number [value]="total()" [prefix]="admin.currencySymbol() + ' '" [decimals]="2" /></div>
       <div class="metric-note">Sin cargos anulados</div>
     </div>
     <div class="metric">
       <div class="metric-label">Catálogo activo</div>
-      <div class="metric-value">{{ admin.catalog().length }}</div>
+      <div class="metric-value"><app-animated-number [value]="admin.catalog().length" /></div>
       <div class="metric-note">Servicios y productos</div>
     </div>
     <div class="metric">
       <div class="metric-label">Áreas</div>
-      <div class="metric-value">{{ admin.areas().length }}</div>
+      <div class="metric-value"><app-animated-number [value]="admin.areas().length" /></div>
       <div class="metric-note">Puntos de venta</div>
     </div>
   </div>
@@ -100,7 +101,7 @@
               </td>
             </tr>
           } @empty {
-            <tr>
+            <tr animate.enter="parda-row-enter">
               <td colspan="7" class="empty">No se encontraron consumos.</td>
             </tr>
           }
@@ -111,7 +112,7 @@
   @if (activeTab() === 'Catálogo') {
     <div class="service-grid">
       @for (item of catalogFiltered(); track item.id) {
-        <article class="card service-card">
+        <article class="card service-card" pardaTilt>
           <h3>{{ item.name }}</h3>
           <p>{{ item.category }} · {{ item.area }}</p>
           <strong>{{ admin.currencySymbol() }} {{ item.price }}</strong>
@@ -133,7 +134,7 @@
   @if (activeTab() === 'Áreas') {
     <div class="service-grid">
       @for (area of admin.areas(); track area) {
-        <article class="card service-card">
+        <article class="card service-card" pardaTilt>
           <h3>{{ area }}</h3>
           <p>{{ serviceCount(area) }} productos o servicios</p>
           <div class="actions">
@@ -148,7 +149,7 @@
   }
 </section>
 @if (dialog() === 'consumption') {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="dialog.set(null)">
     <section
       class="dialog"
       role="dialog"
@@ -206,7 +207,7 @@
   </div>
 }
 @if (dialog() === 'catalog') {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="dialog.set(null)">
     <section
       class="dialog"
       role="dialog"
@@ -260,7 +261,7 @@
   </div>
 }
 @if (dialog() === 'area') {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="dialog.set(null)">
     <section
       class="dialog"
       role="dialog"
@@ -288,7 +289,7 @@
   </div>
 }
 @if (dialog() === 'void' && selectedConsumption(); as row) {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="dialog.set(null)">
     <section
       class="dialog"
       role="alertdialog"

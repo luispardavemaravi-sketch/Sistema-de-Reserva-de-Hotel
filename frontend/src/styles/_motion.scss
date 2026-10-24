@@ -1,0 +1,118 @@
+:root {
+  --ease-out: cubic-bezier(.23, 1, .32, 1);
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  --motion-fast: 150ms;
+  --motion-normal: 220ms;
+}
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.parda-tilt { position: relative; transition: transform var(--motion-normal) var(--ease-out), border-color var(--motion-fast) ease; }
+.parda-tilt::after { content: ''; position: absolute; inset: -1px; border: 1px solid #6287ff; border-radius: inherit; box-shadow: 0 10px 28px -14px #456df466; opacity: 0; pointer-events: none; transition: opacity var(--motion-fast) ease; }
+.parda-tilt:focus-within::after { opacity: 1; }
+.parda-tilt .pi { transition: transform var(--motion-normal) var(--ease-out); }
+.kpi-action { display: block; width: 100%; color: inherit; text-align: left; font: inherit; cursor: pointer; }
+.parda-tooltip { position: fixed; z-index: 10000; max-width: min(290px, calc(100vw - 16px)); padding: 10px 13px; border: 1px solid var(--line); border-radius: 9px; background: var(--topbar); color: var(--ink); box-shadow: 0 8px 24px #0003; font-size: 12px; line-height: 1.6; animation: parda-fade 125ms var(--ease-out); }
+.main-content { view-transition-name: parda-page; }
+::view-transition-old(parda-page) { animation: parda-fade 120ms ease reverse; }
+::view-transition-new(parda-page) { animation: parda-enter 220ms var(--ease-out); }
+::view-transition-group(root) { animation-duration: 0s; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition { pointer-events: none; }
+.btn, .icon-btn, .tab, .sidebar nav a, .theme-toggle, .profile-button { transition: transform var(--motion-fast) var(--ease-out), background-color var(--motion-fast) ease, color var(--motion-fast) ease, border-color var(--motion-fast) ease; }
+.btn:active:not(:disabled), .icon-btn:active, .theme-toggle:active { transform: scale(.97); }
+.field { transition: border-color var(--motion-fast) ease, box-shadow var(--motion-fast) ease; }
+.field:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.field.ng-invalid.ng-touched { border-color: #df727e; }
+.data-table tbody tr { transition: background-color var(--motion-fast) ease; }
+.data-table tbody tr:hover { background: var(--raised); }
+.parda-row-enter { animation: parda-row 220ms var(--ease-out) both; }
+.parda-row-enter:nth-child(2) { animation-delay: 30ms; }
+.parda-row-enter:nth-child(3) { animation-delay: 60ms; }
+.parda-row-enter:nth-child(n+4) { animation-delay: 90ms; }
+.parda-dialog-enter { animation: parda-fade 220ms var(--ease-out); }
+.parda-dialog-enter .dialog { animation: parda-dialog-in 220ms var(--ease-out); }
+.parda-dialog-leave { animation: parda-fade 150ms ease reverse; pointer-events: none; }
+.parda-dialog-leave .dialog { animation: parda-dialog-in 150ms ease reverse; }
+.profile-dropdown { transform-origin: top right; animation: parda-dialog-in 150ms var(--ease-out); }
+.success-message { display: flex; gap: 9px; align-items: center; padding: 12px 16px; margin: 12px 0; border: 1px solid #4b9674; border-radius: 10px; color: var(--ink); background: var(--raised); }
+.success-message .pi { color: #34835b; }
+.error, [role='alert'] { animation: parda-fade 150ms ease; }
+.loading-state { padding: 14px 0; color: var(--muted); font-size: 13px; }
+.skeleton-lines { display: grid; gap: 10px; }
+.skeleton-lines span { position: relative; display: block; height: 44px; border-radius: 8px; background: var(--raised); overflow: hidden; }
+.skeleton-lines span::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent, var(--accent-soft), transparent); animation: parda-shimmer 1.5s linear infinite; }
+.room-card.room-selected { outline: 2px solid var(--accent); outline-offset: 3px; }
+.room-card.status-disponible::after { border-color: #6caf8a; }
+.room-card.status-ocupada::after { border-color: #e9858f; }
+.room-card.status-limpieza::after { border-color: #e0b765; }
+.room-card.status-mantenimiento::after { border-color: #a5afc4; }
+.sidebar nav a { position: relative; }
+.sidebar nav a::before { content: ''; position: absolute; left: -5px; top: 25%; height: 50%; width: 2px; background: #7fa1ff; border-radius: 3px; transform: scaleY(.4); opacity: 0; transition: transform 220ms var(--ease-out), opacity 150ms ease; }
+.sidebar nav a.active::before { opacity: 1; transform: scaleY(1); }
+.workspace, .card, .topbar, .welcome-card { transition: background-color 180ms ease, color 180ms ease; }
+.kpi.featured { overflow: hidden; }
+.kpi.featured::before { content: ''; position: absolute; inset: -30%; background: linear-gradient(110deg, transparent 30%, #7297ff30 50%, transparent 70%); opacity: .4; pointer-events: none; transform: translateX(-25%); transition: transform 280ms var(--ease-out), opacity 200ms ease; }
+.room-status { display: flex; gap: 6px; align-items: center; }
+.finance-drilldown { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 12px; border: 1px solid var(--line); padding: 14px 16px; margin: 0 0 18px; border-radius: 12px; background: var(--raised); }
+.finance-drilldown p { margin: 0; font-size: 13px; color: var(--muted); }
+.movement-detail { margin-top: 16px; }
+.movement-detail h3 { font-size: 14px; }
+.interactive-bars { display: flex; align-items: stretch; gap: 10px; height: 245px; padding-top: 16px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.interactive-bar-group { display: flex; flex: 1 0 38px; flex-direction: column; min-width: 0; }
+.interactive-bar-pair { display: flex; flex: 1; justify-content: center; gap: 4px; min-height: 0; }
+.bar-target { position: relative; padding: 0; background: transparent; border: 0; flex: 1; max-width: 32px; min-width: 15px; border-radius: 5px; }
+.bar-fill { position: absolute; inset: 0; border-radius: 5px 5px 0 0; transform-origin: bottom; transition: transform 280ms var(--ease-out), opacity 150ms ease; animation: parda-bar 280ms var(--ease-out) backwards; pointer-events: none; }
+.bar-label { display: block; padding: 9px 0; text-align: center; color: var(--muted); font-size: 11px; }
+.bar-target:focus-visible .bar-fill { opacity: .7; }
+.interactive-bar-legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 18px 0 0; font-size: 12px; color: var(--muted); }
+.interactive-bar-legend i, .donut-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 7px; }
+.chart-empty { display: grid; place-content: center; text-align: center; min-height: 245px; color: var(--muted); font-size: 13px; }
+.chart-empty i { font-size: 28px; }
+.interactive-donut-layout { display: grid; grid-template-columns: minmax(145px, 1fr) minmax(150px, 1.2fr); align-items: center; gap: 18px; min-height: 248px; }
+.interactive-donut { position: relative; width: 100%; max-width: 240px; margin: auto; }
+.interactive-donut svg { display: block; width: 100%; overflow: visible; }
+.interactive-donut g { cursor: pointer; transition: transform 220ms var(--ease-out); outline: none; }
+.segment-depth { filter: brightness(.5); }
+.segment-face { stroke: var(--surface); stroke-width: .5; }
+.segment-active .segment-face { stroke: var(--ink); stroke-width: .8; filter: brightness(1.13); }
+.interactive-donut g:focus-visible .segment-face { stroke: var(--ink); stroke-width: 2; }
+.donut-center { position: absolute; inset: 28% 23% 32%; display: flex; flex-direction: column; justify-content: center; text-align: center; pointer-events: none; }
+.donut-center strong { font-size: clamp(12px, 1.2vw, 18px); font-variant-numeric: tabular-nums; }
+.donut-center small { margin-top: 4px; font-size: 10px; line-height: 1.4; color: var(--muted); }
+.donut-center > span { font-size: 12px; color: var(--login-accent); }
+.donut-legend { min-width: 0; }
+.donut-legend button { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px; gap: 8px; padding: 10px 8px; border: 1px solid transparent; border-bottom-color: var(--line); border-radius: 7px; color: var(--ink); background: transparent; text-align: left; font-size: 12px; }
+.donut-legend button > span { min-width: 0; }
+.donut-legend strong { white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
+.donut-legend small { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; }
+.donut-legend button.selected { border-color: var(--accent); background: var(--accent-soft); }
+.donut-legend .chart-clear { justify-content: center; color: var(--login-accent); border-bottom: 0; font-size: 11px; }
+.chart-readout { min-height: 36px; margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+@keyframes parda-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes parda-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes parda-row { from { opacity: .4; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes parda-dialog-in { from { opacity: 0; transform: translateY(10px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes parda-bar { from { transform: scaleY(0); } }
+@keyframes parda-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@media (hover: hover) and (pointer: fine) {
+  .parda-tilt:hover::after { opacity: 1; }
+  .parda-tilt:hover .pi { transform: translateY(-2px) rotate(-6deg); }
+  .kpi.featured:hover::before { transform: translateX(25%); opacity: 1; }
+  .sidebar nav a:hover .pi { transform: translateY(-1px); }
+  .sidebar nav .pi { transition: transform 150ms var(--ease-out); }
+  .btn:hover:not(:disabled) { transform: translateY(-1px); }
+  .bar-target:hover .bar-fill { opacity: .72; }
+  .donut-legend button:hover { background: var(--raised); }
+}
+@media (max-width: 600px) {
+  .interactive-donut-layout { grid-template-columns: 1fr; gap: 0; }
+  .interactive-donut { max-width: 220px; }
+  .donut-center strong { font-size: 17px; }
+  .interactive-bars { gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .parda-tilt, .parda-tilt .pi, .interactive-donut g, .btn:active { transform: none !important; }
+  .skeleton-lines span::after { animation: none !important; opacity: .4; }
+  ::view-transition-old(parda-page), ::view-transition-new(parda-page) { animation: none; }
+}

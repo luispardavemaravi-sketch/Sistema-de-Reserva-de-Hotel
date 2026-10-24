@@ -25,6 +25,8 @@
   color: #f4f7ff;
 }
 
+.brand:hover strong { color: #a9c4ff; }
+
 .brand-mark {
   display: grid;
   place-items: center;
@@ -463,7 +465,7 @@
   }
   .workspace-switch span:nth-child(2),
   .workspace-switch i,
-  .profile span:last-child {
+  .profile > span:not(.avatar) {
     display: none;
   }
   .main-content {

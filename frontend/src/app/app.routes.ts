@@ -12,7 +12,11 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./shared/layout/admin-layout.component').then((m) => m.AdminLayoutComponent),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+      { path: '', pathMatch: 'full', redirectTo: 'inicio' },
+      {
+        path: 'inicio',
+        loadComponent: () => import('./features/inicio/inicio.component').then((m) => m.InicioComponent),
+      },
       {
         path: 'dashboard',
         canActivate: [roleGuard],
@@ -65,5 +69,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: 'dashboard' },
+  { path: '**', redirectTo: 'inicio' },
 ];

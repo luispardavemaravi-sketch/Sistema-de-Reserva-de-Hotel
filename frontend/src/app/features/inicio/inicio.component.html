@@ -1,0 +1,42 @@
+<section class="welcome-page" aria-labelledby="welcome-title">
+  <div class="welcome-lines" aria-hidden="true">
+    @for (line of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; track line) {
+      <span></span>
+    }
+  </div>
+  <div class="welcome-content">
+    <section class="welcome-card">
+      <div class="hotel-identity">
+        <span class="hotel-mark" aria-hidden="true"><span>P</span></span>
+        <p class="hotel-name">{{ admin.profile().name }}</p>
+        <p class="hotel-caption">HOTEL · ADMINISTRACIÓN</p>
+      </div>
+      <h1 id="welcome-title">{{ greeting }}, <span>{{ auth.currentUser()?.nombres }}</span></h1>
+      <p class="welcome-subtitle">Todo listo para recibir a tus huéspedes.</p>
+      <details class="quick-guide">
+        <summary>
+          <span class="guide-icon"><i class="pi pi-book" aria-hidden="true"></i></span>
+          <span><strong>Guía de inicio</strong><small>Tu espacio de trabajo, paso a paso</small></span>
+          <i class="pi pi-arrow-right guide-arrow" aria-hidden="true"></i>
+        </summary>
+        <div class="guide-content">
+          <p>Elige un módulo en los accesos rápidos o búscalo en el menú lateral.</p>
+          <p>Consulta tu perfil y turno desde tu nombre, en la barra superior.</p>
+          <p>Para volver aquí y actualizar la página, haz clic en el logo de {{ admin.profile().name }}.</p>
+        </div>
+      </details>
+    </section>
+    <section class="quick-access" aria-labelledby="quick-title">
+      <h2 id="quick-title"><i class="pi pi-th-large" aria-hidden="true"></i> Accesos rápidos</h2>
+      <div class="shortcut-grid">
+        @for (item of shortcuts(); track item.path) {
+          <a class="shortcut" [routerLink]="'/' + item.path">
+            <span class="shortcut-icon"><i [class]="'pi ' + item.icon" aria-hidden="true"></i></span>
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.description }}</small>
+          </a>
+        }
+      </div>
+    </section>
+  </div>
+</section>

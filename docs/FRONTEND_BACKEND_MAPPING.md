@@ -1,5 +1,7 @@
 # Matriz de integración
 
+Auditoría incremental del 23/10/2026: [informe de fase 2](PHASE2_REPORT.md), con pruebas ejecutadas, contratos y bloqueos de esa fase. El login obtiene turnos de `GET /api/auth/turnos-disponibles`; no valida contra el catálogo demo. Las rutas `/api/personal/turnos/**` quedan reservadas al administrador. Véase [la corrección de autenticación](AUTH_FIX_REPORT.md) para la verificación posterior.
+
 | Pantalla | Acción | Endpoint / servicio | Tabla | Estado |
 |---|---|---|---|---|
 | Login | Iniciar sesión | `POST /api/auth/login` / `AuthController` | `usuario` | Conectado; sin acceso local simulado |

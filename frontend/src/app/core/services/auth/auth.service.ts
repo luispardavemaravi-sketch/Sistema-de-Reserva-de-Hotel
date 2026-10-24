@@ -2,7 +2,6 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CargoEmpleado, EmpleadoResponseDTO } from '../../models/personal.model';
-import { HotelAdminStore } from '../../demo/hotel-admin.store';
 import { environment } from '../../../../environments/environment';
 
 export interface LoginCredentials {
@@ -11,6 +10,11 @@ export interface LoginCredentials {
   turnoId: number;
   remember: boolean;
 }
+export interface TurnoDisponible {
+  idTurno: number;
+  horaInicio: string;
+  horaFinal: string;
+}
 export interface AuthSession {
   user: EmpleadoResponseDTO;
   token: string;
@@ -18,26 +22,40 @@ export interface AuthSession {
 }
 
 const storageKey = 'hotel-parda-auth-v1';
+const reloadKey = 'hotel-parda-auth-reload';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
-  private readonly admin = inject(HotelAdminStore);
+  readonly turnos = signal<TurnoDisponible[]>([]);
   private readonly session = signal<AuthSession | null>(this.restore());
   readonly currentUser = computed(() => this.session()?.user ?? null);
   readonly isAuthenticated = computed(() => !!this.currentUser());
-  readonly activeTurno = computed(
-    () => this.admin.shifts().find((shift) => shift.id === this.session()?.turnoId) ?? null,
-  );
+  readonly activeTurno = computed(() => {
+    const id = this.session()?.turnoId;
+    if (!id) return null;
+    const turno = this.turnos().find((item) => item.idTurno === id);
+    return { name: `Turno ${id}`, start: turno?.horaInicio ?? '—', end: turno?.horaFinal ?? '—' };
+  });
   readonly token = computed(() => this.session()?.token ?? null);
   readonly role = computed(() => this.currentUser()?.cargo ?? null);
-  readonly landing = computed(() =>
-    this.role() === CargoEmpleado.CAJERO ? '/finanzas' : '/dashboard',
-  );
+  readonly landing = computed(() => '/inicio');
+
+  prepareHomeReload() {
+    // Carry an in-memory session through this explicit reload only.
+    if (this.session() && typeof window !== 'undefined')
+      sessionStorage.setItem(reloadKey, JSON.stringify(this.session()));
+  }
+
+  async loadTurnos(): Promise<void> {
+    this.turnos.set(await firstValueFrom(
+      this.http.get<TurnoDisponible[]>(`${environment.apiUrl}/auth/turnos-disponibles`),
+    ));
+  }
 
   async login(credentials: LoginCredentials): Promise<void> {
     const identifier = credentials.identifier.trim().toLowerCase();
-    if (!this.admin.shifts().some((shift) => shift.id === credentials.turnoId))
+    if (!Number.isInteger(credentials.turnoId) || credentials.turnoId <= 0)
       throw new Error('Seleccione un turno válido.');
     let session: AuthSession;
     try {
@@ -59,6 +77,7 @@ export class AuthService {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(storageKey);
       sessionStorage.removeItem(storageKey);
+      sessionStorage.removeItem(reloadKey);
       if (credentials.remember) sessionStorage.setItem(storageKey, JSON.stringify(session));
     }
   }
@@ -67,10 +86,12 @@ export class AuthService {
     if (typeof window !== 'undefined') {
       localStorage.removeItem(storageKey);
       sessionStorage.removeItem(storageKey);
+      sessionStorage.removeItem(reloadKey);
     }
   }
   canAccess(path: string) {
     const role = this.role();
+    if (path === 'inicio') return this.isAuthenticated();
     if (role === CargoEmpleado.ADMINISTRADOR) return true;
     if (role === CargoEmpleado.RECEPCIONISTA)
       return ['dashboard', 'recepcion', 'reservas', 'huespedes', 'servicios'].includes(path);
@@ -82,7 +103,8 @@ export class AuthService {
     try {
       localStorage.removeItem('hotel-parda-operations-v1');
       localStorage.removeItem('hotel-parda-admin-v1');
-      const raw = sessionStorage.getItem(storageKey);
+      const raw = sessionStorage.getItem(reloadKey) ?? sessionStorage.getItem(storageKey);
+      sessionStorage.removeItem(reloadKey);
       if (!raw) return null;
       const value = JSON.parse(raw) as AuthSession;
       return value.user?.cargo && value.token ? value : null;

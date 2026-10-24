@@ -3,10 +3,20 @@ import { inject, Injectable } from '@angular/core';
 import { environment } from '../../../../environments/environment';
 import { EmpleadoRequestDTO, EmpleadoResponseDTO } from '../../models/personal.model';
 
+export interface BackendTurno {
+  idTurno: number;
+  horaInicio: string;
+  horaFinal: string;
+  diasSemana: string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class PersonalService {
   private readonly http = inject(HttpClient);
   private readonly url = `${environment.apiUrl}/empleados`;
+  getTurnos() {
+    return this.http.get<BackendTurno[]>(`${environment.apiUrl}/personal/turnos`);
+  }
   getAll() {
     return this.http.get<EmpleadoResponseDTO[]>(this.url);
   }

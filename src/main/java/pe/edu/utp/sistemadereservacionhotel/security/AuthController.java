@@ -10,6 +10,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import pe.edu.utp.sistemadereservacionhotel.dto.personal.TurnoDisponibleDTO;
+import pe.edu.utp.sistemadereservacionhotel.repository.personal.TurnoRepository;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,6 +21,12 @@ public class AuthController {
     private final UsuarioRepository usuarios;
     private final PasswordEncoder passwords;
     private final JwtService jwt;
+    private final TurnoRepository turnos;
+
+    @GetMapping("/turnos-disponibles")
+    public List<TurnoDisponibleDTO> turnosDisponibles() {
+        return turnos.findDisponiblesParaLogin();
+    }
 
     public record LoginRequest(@NotBlank String usuario, @NotBlank String password, @NotNull Long turnoId) {}
     public record UserView(Long id, String nombres, String apellidos, String numeroDocumento,

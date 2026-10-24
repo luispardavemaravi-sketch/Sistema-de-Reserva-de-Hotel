@@ -45,6 +45,7 @@ public class ReservaServiceImpl implements ReservaService {
         // 2. Ejecución de I/O solo con datos válidos
         var huesped = huespedRepo.findById(dto.idHuesped())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Huesped", dto.idHuesped()));
+        requireActiveGuest(huesped);
 
         var habitacion = habitacionRepo.lockById(dto.idHabitacion())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Habitacion", dto.idHabitacion()));
@@ -104,8 +105,10 @@ public class ReservaServiceImpl implements ReservaService {
         }
 
         existente.setHabitacion(habitacion);
-        existente.setHuesped(huespedRepo.findById(dto.idHuesped())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Huesped", dto.idHuesped())));
+        var huesped = huespedRepo.findById(dto.idHuesped())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Huesped", dto.idHuesped()));
+        requireActiveGuest(huesped);
+        existente.setHuesped(huesped);
         existente.setFechaEntradaPlanificada(dto.fechaEntradaPlanificada());
         existente.setFechaSalidaPlanificada(dto.fechaSalidaPlanificada());
         long noches = ChronoUnit.DAYS.between(dto.fechaEntradaPlanificada(), dto.fechaSalidaPlanificada());
@@ -163,6 +166,12 @@ public class ReservaServiceImpl implements ReservaService {
         checkOutRepo.save(evento);
         reserva.setEstadoReserva(estadoRepo.findByNombreEstado("Finalizada").orElseThrow());
         return mapearADto(repo.save(reserva));
+    }
+
+    private void requireActiveGuest(pe.edu.utp.sistemadereservacionhotel.model.huesped.Huesped huesped) {
+        if (!Boolean.TRUE.equals(huesped.getEstadoActivo())) {
+            throw new ValidacionException("El huésped está inactivo.");
+        }
     }
 
     private void requireState(Reserva reserva, String expected) {

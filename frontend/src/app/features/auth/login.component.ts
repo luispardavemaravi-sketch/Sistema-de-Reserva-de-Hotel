@@ -110,9 +110,9 @@ import { ThemeService } from '../../core/services/theme.service';
               <div class="input-wrap">
                 <i class="pi pi-calendar-clock" aria-hidden="true"></i
                 ><select formControlName="turnoId" required>
-                  @for (shift of admin.shifts(); track shift.id) {
-                    <option [value]="shift.id">
-                      {{ shift.name }} · {{ shift.start }}–{{ shift.end }}
+                  @for (shift of auth.turnos(); track shift.idTurno) {
+                    <option [ngValue]="shift.idTurno">
+                      Turno {{ shift.idTurno }} · {{ shift.horaInicio }}–{{ shift.horaFinal }}
                     </option>
                   }
                 </select>
@@ -125,7 +125,7 @@ import { ThemeService } from '../../core/services/theme.service';
             @if (error()) {
               <p class="login-error" role="alert">{{ error() }}</p>
             }
-            <button class="submit-btn" type="submit" [disabled]="loading()">
+            <button class="submit-btn" type="submit" [disabled]="loading() || shiftsLoading() || !auth.turnos().length">
               @if (loading()) {
                 <i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Ingresando...
               } @else {
@@ -443,7 +443,8 @@ import { ThemeService } from '../../core/services/theme.service';
 export class LoginComponent {
   readonly admin = inject(HotelAdminStore);
   readonly theme = inject(ThemeService);
-  private readonly auth = inject(AuthService);
+  readonly auth = inject(AuthService);
+  readonly shiftsLoading = signal(true);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
   readonly showPassword = signal(false);
@@ -453,11 +454,22 @@ export class LoginComponent {
   readonly form = this.fb.nonNullable.group({
     identifier: ['', Validators.required],
     password: ['', Validators.required],
-    turnoId: [1, Validators.required],
+    turnoId: [0, [Validators.required, Validators.min(1)]],
     remember: [true],
   });
   constructor() {
-    this.form.controls.turnoId.setValue(this.admin.shifts()[0]?.id ?? 0);
+    void this.loadTurnos();
+  }
+  async loadTurnos() {
+    try {
+      await this.auth.loadTurnos();
+      this.form.controls.turnoId.setValue(this.auth.turnos()[0]?.idTurno ?? 0);
+      if (!this.auth.turnos().length) this.error.set('No hay turnos configurados en el servidor.');
+    } catch {
+      this.error.set('No se pudieron cargar los turnos. Recargue la página para reintentar.');
+    } finally {
+      this.shiftsLoading.set(false);
+    }
   }
   async submit() {
     this.submitted.set(true);

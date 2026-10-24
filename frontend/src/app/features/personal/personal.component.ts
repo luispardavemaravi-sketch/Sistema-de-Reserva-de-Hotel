@@ -1,3 +1,5 @@
+import { AnimatedNumberComponent } from '../../shared/motion/animated-number.component';
+import { TiltDirective } from '../../shared/motion/tilt.directive';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HotelAdminStore, ShiftConfig } from '../../core/demo/hotel-admin.store';
@@ -6,7 +8,7 @@ import { ModalFocusDirective } from '../../shared/components/modal-focus.directi
 
 @Component({
   selector: 'app-personal',
-  imports: [ReactiveFormsModule, ModalFocusDirective],
+  imports: [AnimatedNumberComponent, TiltDirective, ReactiveFormsModule, ModalFocusDirective],
   templateUrl: './personal.component.html',
   styles: [
     `
@@ -66,6 +68,7 @@ export class PersonalComponent {
   readonly editingEmployee = signal<number | null>(null);
   readonly editingShift = signal<number | null>(null);
   readonly error = signal('');
+  readonly notice = signal('');
   readonly filtered = computed(() =>
     this.store
       .employees()
@@ -134,6 +137,7 @@ export class PersonalComponent {
           ),
     );
     this.dialog.set(null);
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   toggleStatus(id: number) {
     this.store.employees.update((rows) =>
@@ -187,6 +191,7 @@ export class PersonalComponent {
         rows.map((row) => (row.shift === previous.name ? { ...row, shift: value.name } : row)),
       );
     this.dialog.set(null);
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   askDeleteShift(id: number) {
     this.editingShift.set(id);

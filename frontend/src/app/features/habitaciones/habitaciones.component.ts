@@ -1,3 +1,5 @@
+import { AnimatedNumberComponent } from '../../shared/motion/animated-number.component';
+import { TiltDirective } from '../../shared/motion/tilt.directive';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HotelAdminStore, RoomRates, RoomTypeConfig } from '../../core/demo/hotel-admin.store';
@@ -14,7 +16,7 @@ type DeleteTarget = {
 
 @Component({
   selector: 'app-habitaciones',
-  imports: [ReactiveFormsModule, ModalFocusDirective],
+  imports: [AnimatedNumberComponent, TiltDirective, ReactiveFormsModule, ModalFocusDirective],
   templateUrl: './habitaciones.component.html',
   styles: [
     `
@@ -155,6 +157,7 @@ export class HabitacionesComponent {
   readonly selectedEquipment = signal<string[]>([]);
   readonly inline = signal<'floor' | 'type' | 'equipment' | null>(null);
   readonly error = signal('');
+  readonly notice = signal('');
   readonly query = signal('');
   readonly visibleRooms = computed(() =>
     this.store
@@ -276,6 +279,7 @@ export class HabitacionesComponent {
       this.store.updateRoom(room.id, this.statusForm.getRawValue().status as RoomStatus);
     }
     this.dialog.set(null);
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   setRateFields(rates?: RoomRates) {
     if (rates) this.roomForm.patchValue(rates);
@@ -347,6 +351,7 @@ export class HabitacionesComponent {
       id === null ? [...rows, room] : rows.map((item) => (item.id === id ? room : item)),
     );
     this.dialog.set(null);
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   openConfig(kind: 'floor' | 'type' | 'equipment', id?: number | string) {
     this.error.set('');
@@ -468,6 +473,7 @@ export class HabitacionesComponent {
         );
     }
     this.dialog.set(null);
+    this.notice.set('Cambio aplicado en demostración. No se guardó en PostgreSQL.');
   }
   saveInline() {
     if (this.inlineForm.invalid) {

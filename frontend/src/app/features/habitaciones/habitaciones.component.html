@@ -1,4 +1,5 @@
 <section class="page">
+  @if (notice()) { <p class="success-message" role="status" animate.enter="parda-row-enter"><i class="pi pi-check-circle" aria-hidden="true"></i>{{ notice() }}<button class="icon-btn" type="button" aria-label="Cerrar confirmación" (click)="notice.set('')"><i class="pi pi-times" aria-hidden="true"></i></button></p> }
   <p class="eyebrow">DATOS DE DEMOSTRACIÓN · Cambios temporales sin persistencia</p>
   <div class="page-head">
     <div>
@@ -12,22 +13,22 @@
   <div class="metrics">
     <div class="metric">
       <div class="metric-label">Habitaciones</div>
-      <div class="metric-value">{{ store.rooms().length }}</div>
+      <div class="metric-value"><app-animated-number [value]="store.rooms().length" /></div>
       <div class="metric-note">Inventario configurado</div>
     </div>
     <div class="metric">
       <div class="metric-label">Disponibles</div>
-      <div class="metric-value">{{ store.available() }}</div>
+      <div class="metric-value"><app-animated-number [value]="store.available()" /></div>
       <div class="metric-note">Listas para ingreso</div>
     </div>
     <div class="metric">
       <div class="metric-label">Pisos</div>
-      <div class="metric-value">{{ admin.floors().length }}</div>
+      <div class="metric-value"><app-animated-number [value]="admin.floors().length" /></div>
       <div class="metric-note">Distribución actual</div>
     </div>
     <div class="metric">
       <div class="metric-label">Tipos</div>
-      <div class="metric-value">{{ admin.roomTypes().length }}</div>
+      <div class="metric-value"><app-animated-number [value]="admin.roomTypes().length" /></div>
       <div class="metric-note">Categorías de tarifa</div>
     </div>
   </div>
@@ -76,7 +77,7 @@
           </thead>
           <tbody>
             @for (room of visibleRooms(); track room.id) {
-              <tr>
+              <tr animate.enter="parda-row-enter">
                 <td>
                   <strong>{{ room.number }}</strong>
                 </td>
@@ -109,7 +110,7 @@
                 </td>
               </tr>
             } @empty {
-              <tr>
+              <tr animate.enter="parda-row-enter">
                 <td colspan="9" class="empty">
                   Aún no hay habitaciones. Cree la primera para empezar.
                 </td>
@@ -128,7 +129,7 @@
       </div>
       <div class="config-grid">
         @for (floor of admin.floors(); track floor.id) {
-          <div class="card config-card">
+          <div class="card config-card" pardaTilt animate.enter="parda-row-enter">
             <h3>{{ floor.name }}</h3>
             <div class="split-line">
               <span>Número</span><strong>{{ floor.number }}</strong>
@@ -155,7 +156,7 @@
       </div>
       <div class="config-grid">
         @for (type of admin.roomTypes(); track type.id) {
-          <div class="card config-card">
+          <div class="card config-card" pardaTilt animate.enter="parda-row-enter">
             <h3>{{ type.name }}</h3>
             <div class="split-line">
               <span>Capacidad</span><strong>{{ type.capacity }} personas</strong>
@@ -201,7 +202,7 @@
       </div>
       <div class="config-grid">
         @for (item of admin.equipment(); track item) {
-          <div class="card config-card">
+          <div class="card config-card" pardaTilt animate.enter="parda-row-enter">
             <h3>{{ item }}</h3>
             <div class="split-line">
               <span>Habitaciones</span><strong>{{ equipmentCount(item) }}</strong>
@@ -219,7 +220,7 @@
   }
 </section>
 @if (dialog() === 'room') {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="dialog.set(null)">
     <section
       class="dialog large-dialog"
       role="dialog"
@@ -394,7 +395,7 @@
   </div>
 }
 @if (dialog() === 'floor' || dialog() === 'type' || dialog() === 'equipment') {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="dialog.set(null)">
     <section
       class="dialog"
       role="dialog"
@@ -496,7 +497,7 @@
   </div>
 }
 @if (dialog() === 'status') {
-  <div class="dialog-backdrop" (click)="dialog.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="dialog.set(null)">
     <section
       class="dialog"
       role="dialog"
@@ -528,7 +529,7 @@
   </div>
 }
 @if (deleteTarget(); as target) {
-  <div class="dialog-backdrop" (click)="deleteTarget.set(null)">
+  <div class="dialog-backdrop" animate.enter="parda-dialog-enter" animate.leave="parda-dialog-leave" (click)="deleteTarget.set(null)">
     <section
       class="dialog"
       role="alertdialog"

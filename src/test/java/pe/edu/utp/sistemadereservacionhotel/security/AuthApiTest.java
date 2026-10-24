@@ -32,6 +32,9 @@ class AuthApiTest {
         usuarios.save(user);
 
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"usuario\":\"auth-test@example.com\",\"password\":\"test-password\",\"turnoId\":999}"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"usuario\":\"auth-test@example.com\",\"password\":\"wrong\",\"turnoId\":1}"))
                 .andExpect(status().isUnauthorized());
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)

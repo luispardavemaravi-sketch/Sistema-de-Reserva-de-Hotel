@@ -42,6 +42,7 @@ export function chartBuckets(
   to?: string,
 ): ChartBucket[] {
   const bounds = periodBounds(period, from, to);
+  entries = entriesForPeriod(entries, period, from, to);
   if (period === 'Hoy') {
     return [0, 6, 12, 18].map((start) =>
       bucket(
