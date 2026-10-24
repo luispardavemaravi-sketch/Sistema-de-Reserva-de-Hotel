@@ -12,7 +12,7 @@ describe('Reservation HTTP feedback', () => {
     TestBed.configureTestingModule({ providers: [{ provide: ReservaBackendService, useValue: api }] });
     const component = TestBed.runInInjectionContext(() => new ReservasComponent());
     await Promise.resolve();
-    const row = { id: 1, code: 'TEST', guest: 'Test', room: '101', from: '', to: '', status: 'Pendiente', extras: [], total: 0 };
+    const row = { id: 1, code: 'TEST', guest: 'Test', room: '101', from: '', to: '', status: 'Pendiente' as const, extras: [], total: 0 };
     const action = component.confirm(row);
     await component.confirm(row);
     expect(api.transition).toHaveBeenCalledTimes(1);
@@ -25,3 +25,4 @@ describe('Reservation HTTP feedback', () => {
     expect(component.error()).toContain('409');
   });
 });
+
