@@ -8,6 +8,7 @@ import pe.edu.utp.sistemadereservacionhotel.model.reserva.Reserva;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,7 +55,7 @@ class ReservaBuilderTest {
     @Test
     void fechaEntradaPlanificada_FechaEnElPasado_LanzaIllegalArgumentException() {
         // Arrange
-        LocalDate ayer = LocalDate.now().minusDays(1);
+        LocalDate ayer = LocalDate.now(ZoneId.of("America/Lima")).minusDays(1);
 
         // Act & Assert
         assertThrows(IllegalArgumentException.class, () -> {
