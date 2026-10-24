@@ -1,52 +1,347 @@
-# Sistema de Reservación de Hotel
 
-Monolito Spring Boot 4 / Java 21 con API REST, PostgreSQL y panel Angular 22. El código raíz (`pom.xml`, `src/`) es el backend activo; `backend/` es una copia heredada y no participa en los comandos de este documento.
+<div align="center">
 
-## Estado actual
+# 🏨 HOTEL PARDA
 
-El backend tiene entidades para habitaciones, huéspedes, reservas, personal, servicios y finanzas. PostgreSQL usa migraciones Flyway y Hibernate valida el esquema. El login del panel consulta la API; **Reservas** y **Huéspedes** utilizan datos reales. Las operaciones de reserva por noche crean, modifican, confirman, registran entrada y salida, y cancelan en el servidor. Las demás pantallas todavía usan `HotelDemoStore` / `HotelAdminStore` con datos temporales de demostración. La interfaz de reservas por horas, extras y acompañantes muestra que su API aún no está disponible. El sistema completo **no está terminado** ni desplegado.
+### Sistema de Gestión y Reservación Hotelera
 
-## Requisitos
+**Una plataforma Full Stack para modernizar la administración hotelera.**
 
-- Java 21, Maven Wrapper y Node 24 con npm; o Docker Compose.
-- PostgreSQL 17 para ejecución normal.
-- `JWT_SECRET` de al menos 32 caracteres; `DB_PASSWORD`, `ADMIN_EMAIL` y `ADMIN_PASSWORD` para Compose.
+![Java](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-4-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+![Angular](https://img.shields.io/badge/Angular-22-DD0031?style=for-the-badge&logo=angular&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-## Inicio con Docker
+**Spring Security · JWT · Spring Data JPA · Hibernate · Flyway · TypeScript · GitHub Actions**
 
-1. Copiar `.env.example` a `.env` y sustituir los valores de ejemplo por secretos propios.
-2. Ejecutar `docker compose up --build` desde la raíz.
-3. Abrir `http://localhost:4200`; iniciar sesión con `ADMIN_EMAIL`, `ADMIN_PASSWORD` y el turno 1.
-4. Swagger UI: `http://localhost:8080/swagger-ui.html`.
+[📖 Documentación](docs/ARCHITECTURE.md) ·
+[🔌 API REST](docs/API.md) ·
+[🗃️ Base de datos](docs/DATABASE.md) ·
+[🚀 Despliegue](docs/DEPLOYMENT.md)
 
-Compose inicia PostgreSQL con volumen, API y servidor de desarrollo Angular. Publica PostgreSQL en `localhost:5433` para evitar conflictos con instalaciones locales. Activa el perfil `dev`, que carga habitaciones, huéspedes y reservas reproducibles mediante Flyway. La base se crea en el primer arranque. Docker Desktop debe estar iniciado.
+---
 
-## Inicio manual
+</div>
 
-Crear la base `hotel` en PostgreSQL y exportar `DATABASE_URL=jdbc:postgresql://localhost:5432/hotel`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_EMAIL` y `ADMIN_PASSWORD`. En PowerShell se pueden establecer como `$env:NOMBRE='valor'` para la sesión. Ejecutar `./mvnw spring-boot:run` (`.\mvnw.cmd spring-boot:run` en Windows). En otra terminal: `cd frontend`, `npm ci`, `npm start`. La API utiliza el puerto 8080 y Angular 4200. `FRONTEND_ORIGIN` permite otro origen CORS.
+## 🌟 Acerca del proyecto
 
-Para cargar datos de desarrollo en la ejecución manual, definir `SPRING_PROFILES_ACTIVE=dev` antes del primer arranque. El usuario administrador inicial se crea solo si `ADMIN_EMAIL` y `ADMIN_PASSWORD` están definidos y ese correo no existe. No se incluyen contraseñas de demostración. Un administrador puede crear otros usuarios con `POST /api/auth/usuarios`.
+**Hotel Parda** es un sistema de administración hotelera diseñado para centralizar las operaciones de un establecimiento mediante tecnologías modernas y buenas prácticas de ingeniería de software.
 
-## Arquitectura y datos
+Combina una API REST desarrollada con **Java 21 y Spring Boot 4**, una interfaz administrativa en **Angular 22** y persistencia relacional mediante **PostgreSQL 17**.
 
-Los controladores reciben DTO, los servicios aplican reglas y los repositorios JPA acceden a PostgreSQL. `V1__initial_schema.sql` contiene las tablas de las entidades heredadas; V2 añade estados e integridad de reservas; V3 añade usuarios con hash BCrypt. El intervalo de ocupación es `[entrada, salida)` y el servicio bloquea la fila de la habitación antes de comprobar cruces. El frontend usa JWT Bearer durante la sesión del navegador. Véanse [arquitectura](docs/ARCHITECTURE.md), [base de datos](docs/DATABASE.md), [API](docs/API.md) y [matriz de integración](docs/FRONTEND_BACKEND_MAPPING.md).
+La plataforma contempla:
 
-## Pruebas
+- 🛎️ Recepción y control de estancias
+- 📅 Reservas y disponibilidad
+- 🏢 Habitaciones, pisos y tarifas
+- 👥 Registro y administración de huéspedes
+- 🧾 Servicios y consumos
+- 💰 Finanzas y caja
+- 👨‍💼 Gestión del personal
+- 📊 Dashboard e indicadores operativos
+- 🔐 Autenticación JWT y control de acceso
 
-- Backend: `.\mvnw.cmd clean verify` en Windows o `./mvnw clean verify` en Unix.
-- Frontend: `cd frontend && npm test -- --watch=false && npm run build`.
-- La prueba de contexto usa H2; además se ejecutó Compose con PostgreSQL 17 para verificar migraciones, persistencia y concurrencia de reservas desde la API.
+> 🚧 **Estado:** Proyecto en desarrollo activo. Login, reservas por noche y huéspedes cuentan con integración backend. Los demás módulos conservan funciones de demostración o integración parcial.
 
-Véase [informe de pruebas](docs/TEST_REPORT.md) para los resultados ejecutados y sus límites.
+## 🛠️ Stack tecnológico
 
-## Despliegue
+| Área | Tecnologías |
+|:---|:---|
+| **Backend** | Java 21, Spring Boot 4, Spring Web MVC |
+| **Seguridad** | Spring Security, JWT, BCrypt |
+| **Persistencia** | Spring Data JPA, Hibernate, PostgreSQL 17 |
+| **Migraciones** | Flyway |
+| **Frontend** | Angular 22, TypeScript, HTML5, CSS3 |
+| **Comunicación** | REST API, JSON, Angular HttpClient, RxJS |
+| **Pruebas** | JUnit 5, Mockito, Vitest |
+| **Documentación** | Swagger UI, OpenAPI |
+| **DevOps** | Docker, Docker Compose, GitHub Actions |
+| **Construcción** | Maven Wrapper, npm |
 
-Vercel: proyecto con raíz `frontend`, `npm ci`, `npm run build`, salida `dist/hotel-admin-frontend/browser` y variable de build `PUBLIC_API_URL=https://SU-API/api`. Se incluye `vercel.json` para rutas SPA. El backend puede ejecutarse en un hosting de contenedores con PostgreSQL administrado; necesita `DATABASE_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, `FRONTEND_ORIGIN` y, para crear el primer administrador, `ADMIN_EMAIL`/`ADMIN_PASSWORD`. Véase [despliegue](docs/DEPLOYMENT.md). No hay URL pública verificada.
+## 🏗️ Arquitectura
 
-## Problemas frecuentes
+```text
+                ┌──────────────────────────┐
+                │       HOTEL PARDA        │
+                │       Angular 22         │
+                │     localhost:4300       │
+                └─────────────┬────────────┘
+                              │
+                          HTTP / JSON
+                              │
+                ┌─────────────▼────────────┐
+                │      SPRING BOOT 4       │
+                │       Java 21            │
+                │     localhost:8080       │
+                │                          │
+                │ Controllers / DTOs       │
+                │ Services / Security      │
+                │ Repositories / JPA       │
+                └─────────────┬────────────┘
+                              │
+                           JDBC / JPA
+                              │
+                ┌─────────────▼────────────┐
+                │      POSTGRESQL 17       │
+                │      Flyway / SQL        │
+                │     localhost:5433       │
+                └──────────────────────────┘
+```
 
-- Error de conexión al iniciar: verificar PostgreSQL y `DATABASE_URL`.
-- 401: token ausente, vencido o credenciales/turno incorrectos.
-- 403: rol insuficiente para la ruta.
-- Error CORS: `FRONTEND_ORIGIN` debe coincidir exactamente con el origen del panel.
-- Docker Compose no conecta: iniciar Docker Desktop y comprobar `.env`.
+El backend sigue una arquitectura monolítica en capas:
+
+**Controller → Service → Repository → PostgreSQL**
+
+La API incorpora validaciones, autorización por roles, operaciones transaccionales y migraciones versionadas.
+
+## 🧩 Módulos del sistema
+
+| Módulo | Descripción | Integración |
+|:---|:---|:---|
+| 🔐 Autenticación | Login, JWT, roles y turnos | Implementada |
+| 📊 Dashboard | Métricas y gráficos | Demo |
+| 🛎️ Recepción | Rack, ocupación y estancias | Demo |
+| 📅 Reservas | Crear, editar, confirmar, entrada, salida y cancelar | Parcial real |
+| 🏨 Habitaciones | Inventario, pisos, tipos, estados y tarifas | Demo |
+| 👥 Huéspedes | Registro, consulta, actualización y baja lógica | Real |
+| 🧾 Servicios | Catálogo y consumos adicionales | Demo |
+| 💳 Finanzas | Caja, pagos y comprobantes | Demo |
+| 👨‍💼 Personal | Empleados, turnos y gestión | Parcial |
+
+**Importante:** las cifras financieras y operativas mostradas en módulos de demostración no representan transacciones reales.
+
+## ✨ Características principales
+
+### 📅 Gestión de reservas
+
+- Reservas por noche.
+- Asociación de habitaciones y huéspedes.
+- Cálculo de tarifas en backend.
+- Control de disponibilidad.
+- Prevención de reservas solapadas.
+- Confirmación, check-in y check-out.
+- Cancelación y control de estados.
+- Validación de fechas y reglas de negocio.
+
+### 🔒 Seguridad
+
+- Spring Security.
+- Autenticación basada en JWT.
+- Hash de contraseñas con BCrypt.
+- Autorización por roles.
+- CORS configurable.
+- Restricciones sobre recursos protegidos.
+
+### 🗄️ Persistencia
+
+- PostgreSQL 17.
+- Hibernate y Spring Data JPA.
+- Migraciones con Flyway.
+- Validación del esquema.
+- Transacciones para operaciones críticas.
+
+## 📁 Estructura del proyecto
+
+```text
+Sistema-de-Reserva-de-Hotel/
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   └── resources/
+│   └── test/
+│
+├── frontend/
+│   ├── src/
+│   ├── package.json
+│   └── Dockerfile.dev
+│
+├── backend/             # Implementación heredada
+├── docs/
+├── .env.example
+├── compose.yaml
+├── Dockerfile
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+└── README.md
+```
+
+> El backend activo se encuentra en la raíz (`pom.xml` y `src/`). La carpeta `backend/` es heredada.
+
+## 🚀 Instalación y ejecución
+
+### 1. Clonar repositorio
+
+```bash
+git clone https://github.com/luispardavemaravi-sketch/Sistema-de-Reserva-de-Hotel.git
+cd Sistema-de-Reserva-de-Hotel
+```
+
+### 2. Configurar entorno
+
+Copia `.env.example` como `.env` y establece valores propios:
+
+```dotenv
+DB_PASSWORD=your_database_password
+DB_PORT=5433
+JWT_SECRET=your_secure_random_secret_at_least_32_characters
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=your_admin_password
+```
+
+**Nunca publiques contraseñas, tokens ni el archivo `.env`.**
+
+### 3. Iniciar Docker
+
+Con Docker Desktop iniciado:
+
+```bash
+docker compose config --quiet
+docker compose up --build -d
+docker compose ps
+```
+
+### 4. Acceder a la aplicación
+
+| Servicio | Dirección |
+|:---|:---|
+| 🌐 Frontend | http://localhost:4300 |
+| ⚙️ Backend | http://localhost:8080/api |
+| 📚 Swagger UI | http://localhost:8080/swagger-ui.html |
+| 🗄️ PostgreSQL | localhost:5433 |
+
+El puerto 4300 permite ejecutar Hotel Parda sin interferir con aplicaciones que utilizan Angular en el puerto 4200.
+
+El backend debe permitir el origen `http://localhost:4300` en su configuración CORS.
+
+## 🧪 Pruebas y compilación
+
+### Backend — Windows
+
+```powershell
+.\mvnw.cmd clean verify
+```
+
+### Backend — Linux / macOS
+
+```bash
+./mvnw clean verify
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm ci
+npm test -- --watch=false
+npm run build
+```
+
+El proyecto también incluye configuración de CI en:
+
+`.github/workflows/ci.yml`
+
+Los resultados documentados se encuentran en [TEST_REPORT.md](docs/TEST_REPORT.md).
+
+## 🔌 API REST
+
+La API se documenta mediante Swagger/OpenAPI.
+
+**Swagger local:** http://localhost:8080/swagger-ui.html
+
+| Método | Endpoint | Funcionalidad |
+|:---|:---|:---|
+| `POST` | `/api/auth/login` | Iniciar sesión |
+| `GET` | `/api/habitaciones` | Consultar habitaciones |
+| `GET` | `/api/huespedes` | Consultar huéspedes |
+| `POST` | `/api/huespedes` | Registrar huésped |
+| `GET` | `/api/reservas` | Consultar reservas |
+| `POST` | `/api/reservas` | Crear reserva |
+| `PUT` | `/api/reservas/{id}` | Modificar reserva |
+| `POST` | `/api/reservas/{id}/confirmacion` | Confirmar reserva |
+| `POST` | `/api/reservas/{id}/entrada` | Registrar entrada |
+| `POST` | `/api/reservas/{id}/salida` | Registrar salida |
+| `DELETE` | `/api/reservas/{id}` | Cancelar reserva |
+
+Los endpoints protegidos requieren autenticación y permisos adecuados.
+
+## ☁️ Despliegue
+
+### Frontend — Vercel
+
+| Configuración | Valor |
+|:---|:---|
+| Root Directory | `frontend` |
+| Install Command | `npm ci` |
+| Build Command | `npm run build` |
+| Output Directory | `dist/hotel-admin-frontend/browser` |
+| Variable de build | `PUBLIC_API_URL` |
+
+```dotenv
+PUBLIC_API_URL=https://api.tu-dominio.com/api
+```
+
+### Backend — Java / Docker
+
+Variables requeridas según el entorno:
+
+```text
+DATABASE_URL
+DB_USER
+DB_PASSWORD
+JWT_SECRET
+FRONTEND_ORIGIN
+ADMIN_EMAIL
+ADMIN_PASSWORD
+```
+
+Se recomienda PostgreSQL administrado, HTTPS, secretos fuera del repositorio y copias de seguridad.
+
+**El despliegue público aún no ha sido verificado.**
+
+## 🗺️ Roadmap
+
+- [x] Arquitectura inicial Spring Boot + Angular
+- [x] Persistencia PostgreSQL y Flyway
+- [x] Autenticación JWT
+- [x] Integración de reservas por noche
+- [x] Integración de huéspedes
+- [ ] Integración completa de habitaciones
+- [ ] Integración de recepción
+- [ ] Integración de servicios
+- [ ] Integración de finanzas
+- [ ] Integración de personal
+- [ ] Dashboard con métricas reales
+- [ ] Pruebas end-to-end completas
+- [ ] Despliegue público
+
+## 📚 Documentación
+
+| Documento | Contenido |
+|:---|:---|
+| [Arquitectura](docs/ARCHITECTURE.md) | Organización técnica |
+| [Base de datos](docs/DATABASE.md) | Modelo y persistencia |
+| [API](docs/API.md) | Contratos REST |
+| [Integración](docs/FRONTEND_BACKEND_MAPPING.md) | Estado de los módulos |
+| [Pruebas](docs/TEST_REPORT.md) | Verificaciones |
+| [Despliegue](docs/DEPLOYMENT.md) | Configuración de publicación |
+
+---
+
+<div align="center">
+
+### 💙 HOTEL PARDA
+
+**Tecnología al servicio de una administración hotelera más eficiente.**
+
+Desarrollado con Java, Spring Boot, Angular y PostgreSQL.
+
+**Estado: Desarrollo activo**
+
+</div>
